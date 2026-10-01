@@ -25,7 +25,7 @@ export default function Wallet() {
   const expenses = useStore((s) => s.expenses);
   const dailyBudgets = useStore((s) => s.dailyBudgets);
   const defaultDailyBudget = useStore((s) => s.defaultDailyBudget);
-  const budget = useStore((s) => budgetFor(s, day));
+  const budget = budgetFor({ dailyBudgets, defaultDailyBudget }, day);
   const salary = useStore((s) => s.salary);
   const schedule = useStore((s) => s.paySchedule);
   const { setDailyBudget, setSettings } = useStore.getState();
@@ -59,39 +59,41 @@ export default function Wallet() {
   return (
     <Screen>
       <Header
-        eyebrow="Expense tracker"
+        eyebrow="Expenses"
         title="Wallet"
         right={
           <View className="flex-row items-center" style={{ gap: 6 }}>
-            <IconButton icon="chevron-back" size={34} onPress={() => setDay(addDays(day, -1))} />
+            <IconButton icon="chevron-back" size={38} onPress={() => setDay(addDays(day, -1))} />
             <Tap haptics="pick" onPress={() => setDay(today)}>
-              <Text className="min-w-[78px] text-center text-[13px] font-bold text-ink">{relativeDay(day, today)}</Text>
+              <Text className="min-w-[82px] text-center text-[14px] font-bold text-ink">{relativeDay(day, today)}</Text>
             </Tap>
-            <IconButton icon="chevron-forward" size={34} onPress={() => day < today && setDay(addDays(day, 1))} color={day < today ? C.ink : C.dim} />
+            <IconButton icon="chevron-forward" size={38} disabled={day >= today} onPress={() => setDay(addDays(day, 1))} />
           </View>
         }
       />
 
       <Card>
-        <View className="flex-row items-center" style={{ gap: 18 }}>
-          <Ring size={112} stroke={12} progress={budget ? spent / budget : 0} color={left < 0 ? C.rose : C.amber}>
-            <Text className="text-[11px] font-semibold uppercase tracking-wider text-sub">spent</Text>
-            <Text className="text-[18px] font-extrabold text-ink">{peso(spent)}</Text>
+        <View className="flex-row items-center" style={{ gap: 22 }}>
+          <Ring size={120} stroke={13} progress={budget ? spent / budget : 0} color={left < 0 ? C.warn : C.accent}>
+            <Text className="text-[12px] font-semibold text-sub">spent</Text>
+            <Text className="text-[19px] font-extrabold text-ink">{peso(spent)}</Text>
           </Ring>
-          <View className="flex-1" style={{ gap: 4 }}>
-            <Text className="text-[12px] font-bold uppercase tracking-wider text-sub">{left >= 0 ? 'Left to spend' : 'Over budget by'}</Text>
-            <Text className={`text-[34px] font-extrabold tracking-tight ${left < 0 ? 'text-rose' : 'text-ink'}`}>{peso(Math.abs(left))}</Text>
+          <View className="flex-1" style={{ gap: 6 }}>
+            <Text className="text-[13px] font-semibold text-sub">{left >= 0 ? 'Left' : 'Over by'}</Text>
+            <Text className={`text-[36px] font-extrabold tracking-tight ${left < 0 ? 'text-warn' : 'text-ink'}`} numberOfLines={1} adjustsFontSizeToFit>
+              {peso(Math.abs(left))}
+            </Text>
             {editing ? null : (
-              <Tap haptics="pick" onPress={() => { setDraft(String(budget)); setEditing(true); }} className="flex-row items-center" style={{ gap: 6 }}>
-                <Text className="text-[13px] text-sub">Budget {peso(budget)}</Text>
-                <Ionicons name="create-outline" size={14} color={C.sub} />
+              <Tap haptics="pick" onPress={() => { setDraft(String(budget)); setEditing(true); }} className="flex-row items-center self-start rounded-full bg-raised px-3 py-1.5" style={{ gap: 6 }}>
+                <Text className="text-[13px] font-semibold text-sub">of {peso(budget)}</Text>
+                <Ionicons name="pencil" size={12} color={C.sub} />
               </Tap>
             )}
           </View>
         </View>
         {editing ? (
-          <Animated.View entering={FadeIn} style={{ marginTop: 14, flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
-            <Field label={`Budget for ${relativeDay(day, today).toLowerCase()}`} prefix="₱" keyboardType="number-pad" value={draft} onChangeText={setDraft} autoFocus onSubmitEditing={saveBudget} returnKeyType="done" />
+          <Animated.View entering={FadeIn} style={{ marginTop: 18, flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
+            <Field label="Budget" prefix="₱" keyboardType="number-pad" value={draft} onChangeText={setDraft} autoFocus onSubmitEditing={saveBudget} returnKeyType="done" />
             <Button label="Save" small onPress={saveBudget} />
           </Animated.View>
         ) : null}
@@ -99,47 +101,42 @@ export default function Wallet() {
 
       <Button label="Add expense" icon="add" onPress={() => router.push({ pathname: '/add-expense', params: { day } })} />
 
-      <SectionTitle right={<Text className="text-[12px] font-semibold text-dim">{dayList.length} item{dayList.length === 1 ? '' : 's'}</Text>}>
-        {relativeDay(day, today)}’s spending
-      </SectionTitle>
       {dayList.length === 0 ? (
-        <Card className="items-center py-8">
+        <View className="items-center py-6" style={{ gap: 10 }}>
           <Ionicons name="receipt-outline" size={30} color={C.dim} />
-          <Text className="mt-2 text-[14px] text-sub">No expenses yet. Log every peso!</Text>
-        </Card>
+          <Text className="text-[14px] text-dim">Nothing logged yet</Text>
+        </View>
       ) : (
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: 10 }}>
           {dayList.map((e) => (
             <ExpenseRow key={e.id} e={e} />
           ))}
         </View>
       )}
 
-      <SectionTitle right={<Text className="text-[12px] font-semibold text-dim">{period.label}</Text>}>Pay period</SectionTitle>
+      <SectionTitle right={<Text className="text-[13px] font-semibold text-dim">{period.label}</Text>}>Pay period</SectionTitle>
       {salary > 0 ? (
         <Card>
-          <View className="flex-row" style={{ gap: 12 }}>
-            <Stat label="Income" value={peso(period.income)} sub={schedule === 'kinsenas' ? 'half salary' : 'salary'} />
-            <Stat label="Spent" value={peso(periodSpent)} color={C.amber} sub={`${Math.round((periodSpent / Math.max(1, period.income)) * 100)}% used`} />
-            <Stat label="Left" value={peso(periodLeft)} color={periodLeft < 0 ? C.rose : C.mint} sub={`${daysLeft} day${daysLeft === 1 ? '' : 's'} left`} />
-          </View>
-          <View className="my-3">
-            <Bar progress={periodSpent / Math.max(1, period.income)} color={C.mint} />
-          </View>
-          <View className="flex-row items-center rounded-2xl bg-raised p-3" style={{ gap: 10 }}>
-            <Ionicons name={safePerDay >= budget ? 'shield-checkmark' : 'warning'} size={20} color={safePerDay >= budget ? C.mint : C.amber} />
-            <Text className="flex-1 text-[13px] leading-[18px] text-sub">
-              {periodLeft <= 0
-                ? 'Your money for this pay period is used up. Only spend on essentials until payday.'
-                : `You can safely spend ${peso(safePerDay)}/day until payday${safePerDay < budget ? `, which is less than your ${peso(budget)} daily budget. Tighten up a bit.` : '. You are on track to save.'}`}
-            </Text>
+          <View style={{ gap: 18 }}>
+            <View className="flex-row" style={{ gap: 12 }}>
+              <Stat label="Income" value={peso(period.income)} />
+              <Stat label="Spent" value={peso(periodSpent)} />
+              <Stat label="Left" value={peso(periodLeft)} color={periodLeft < 0 ? C.warn : C.ink} />
+            </View>
+            <Bar progress={periodSpent / Math.max(1, period.income)} />
+            <View className="flex-row items-center rounded-[20px] bg-raised px-4 py-4" style={{ gap: 12 }}>
+              <Ionicons name={periodLeft > 0 && safePerDay >= budget ? 'shield-checkmark' : 'warning'} size={22} color={periodLeft > 0 && safePerDay >= budget ? C.accent : C.warn} />
+              <View className="flex-1">
+                <Text className="text-[16px] font-bold text-ink">{periodLeft > 0 ? `${peso(safePerDay)}/day` : 'Essentials only'}</Text>
+                <Text className="text-[13px] text-sub">{periodLeft > 0 ? `safe until payday · ${daysLeft} day${daysLeft === 1 ? '' : 's'}` : 'until payday'}</Text>
+              </View>
+            </View>
           </View>
         </Card>
       ) : (
         <Card>
-          <Text className="mb-3 text-[14px] leading-[20px] text-sub">Add your monthly salary to see how much you can safely spend each day until payday.</Text>
-          <View className="flex-row items-end" style={{ gap: 10 }}>
-            <Field label="Monthly salary" prefix="₱" keyboardType="number-pad" value={salaryDraft} onChangeText={setSalaryDraft} placeholder="18000" />
+          <View className="flex-row items-end" style={{ gap: 12 }}>
+            <Field label="Monthly salary" prefix="₱" keyboardType="number-pad" value={salaryDraft} onChangeText={setSalaryDraft} placeholder="18,000" />
             <Button small label="Save" onPress={() => parseNum(salaryDraft) > 0 && setSettings({ salary: parseNum(salaryDraft) })} />
           </View>
         </Card>
@@ -147,15 +144,17 @@ export default function Wallet() {
 
       <SectionTitle>Last 7 days</SectionTitle>
       <Card>
-        <View className="h-[130px] flex-row items-end justify-between" style={{ gap: 8 }}>
+        <View className="h-[140px] flex-row items-end justify-between" style={{ gap: 10 }}>
           {week.map((w) => {
             const over = w.total > budgetFor({ dailyBudgets, defaultDailyBudget }, w.day);
             const isSel = w.day === day;
             return (
-              <Tap key={w.day} haptics="pick" onPress={() => setDay(w.day)} className="flex-1 items-center" style={{ gap: 6 }}>
+              <Tap key={w.day} haptics="pick" onPress={() => setDay(w.day)} className="flex-1 items-center" style={{ gap: 8 }}>
                 <Text className="text-[10px] font-semibold text-dim">{w.total ? (w.total >= 1000 ? `${(w.total / 1000).toFixed(1)}k` : Math.round(w.total)) : ''}</Text>
-                <View style={{ height: Math.max(4, (w.total / weekMax) * 84), width: '100%', borderRadius: 8, backgroundColor: over ? C.rose : isSel ? C.amber : `${C.amber}55` }} />
-                <Text className={`text-[11px] font-bold ${isSel ? 'text-ink' : 'text-dim'}`}>{SHORT_DAYS[fromKey(w.day).getDay()]}</Text>
+                <View style={{ height: Math.max(4, (w.total / weekMax) * 84), width: '100%', borderRadius: 8, backgroundColor: over ? C.warn : isSel ? C.accent : 'rgba(226,35,45,0.35)' }} />
+                <Text className="text-[12px] font-bold" style={{ color: isSel ? C.ink : C.dim }}>
+                  {SHORT_DAYS[fromKey(w.day).getDay()]}
+                </Text>
               </Tap>
             );
           })}
@@ -164,23 +163,23 @@ export default function Wallet() {
 
       {cats.length ? (
         <>
-          <SectionTitle>Where it went ({period.label})</SectionTitle>
+          <SectionTitle right={<Text className="text-[13px] font-semibold text-dim">{period.label}</Text>}>Where it went</SectionTitle>
           <Card>
-            <View style={{ gap: 12 }}>
-              {cats.map((c) => {
+            <View style={{ gap: 16 }}>
+              {cats.map((c, i) => {
                 const meta = CATEGORIES[c.key];
                 return (
-                  <View key={c.key} style={{ gap: 6 }}>
+                  <View key={c.key} style={{ gap: 8 }}>
                     <View className="flex-row items-center justify-between">
-                      <View className="flex-row items-center" style={{ gap: 8 }}>
-                        <Ionicons name={meta.icon} size={16} color={meta.color} />
-                        <Text className="text-[14px] font-semibold text-ink">{meta.label}</Text>
+                      <View className="flex-row items-center" style={{ gap: 10 }}>
+                        <Ionicons name={meta.icon} size={17} color={C.sub} />
+                        <Text className="text-[15px] font-semibold text-ink">{meta.label}</Text>
                       </View>
-                      <Text className="text-[14px] font-bold text-ink">
-                        {peso(c.total)} <Text className="text-[12px] font-semibold text-dim">{Math.round((c.total / periodSpent) * 100)}%</Text>
+                      <Text className="text-[15px] font-bold text-ink">
+                        {peso(c.total)} <Text className="text-[13px] font-semibold text-dim">{Math.round((c.total / periodSpent) * 100)}%</Text>
                       </Text>
                     </View>
-                    <Bar progress={c.total / cats[0].total} color={meta.color} height={6} />
+                    <Bar progress={c.total / cats[0].total} color={i === 0 ? C.accent : 'rgba(226,35,45,0.45)'} height={6} />
                   </View>
                 );
               })}
@@ -198,17 +197,16 @@ function ExpenseRow({ e }: { e: Expense }) {
   const meta = CATEGORIES[e.category] ?? CATEGORIES.other;
   return (
     <Animated.View entering={FadeInDown.duration(260)} exiting={FadeOut.duration(180)} layout={LinearTransition.duration(220)}>
-      <Tap haptics="pick" onPress={() => setOpen((o) => !o)} className="flex-row items-center rounded-2xl border border-line bg-card p-3.5" style={{ gap: 12 }}>
-        <View style={{ backgroundColor: `${meta.color}22` }} className="h-11 w-11 items-center justify-center rounded-xl">
-          <Ionicons name={meta.icon} size={20} color={meta.color} />
+      <Tap haptics="pick" onPress={() => setOpen((o) => !o)} className="flex-row items-center rounded-[24px] border border-line bg-card px-4 py-4" style={{ gap: 14 }}>
+        <View className="h-12 w-12 items-center justify-center rounded-2xl bg-raised">
+          <Ionicons name={meta.icon} size={21} color={C.accent} />
         </View>
-        <View className="flex-1">
-          <Text className="text-[15px] font-bold text-ink" numberOfLines={1}>
+        <View className="flex-1" style={{ gap: 2 }}>
+          <Text className="text-[16px] font-bold text-ink" numberOfLines={1}>
             {e.note || meta.label}
           </Text>
-          <Text className="text-[12px] text-sub">
+          <Text className="text-[13px] text-sub">
             {meta.label} · {timeLabel(e.ts)}
-            {e.mealSlot ? ' · from meal plan' : ''}
           </Text>
         </View>
         {open ? (
@@ -216,7 +214,7 @@ function ExpenseRow({ e }: { e: Expense }) {
             <Button small variant="danger" icon="trash-outline" label="Delete" onPress={() => remove(e.id)} />
           </Animated.View>
         ) : (
-          <Text className="text-[16px] font-extrabold text-ink">-{peso(e.amount, e.amount % 1 !== 0)}</Text>
+          <Text className="text-[17px] font-extrabold text-ink">-{peso(e.amount, e.amount % 1 !== 0)}</Text>
         )}
       </Tap>
     </Animated.View>

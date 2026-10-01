@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, C, Field, IconButton, Tap, haptic } from '@/components/ui';
+import { Button, C, Field, GUTTER, IconButton, Tap, haptic } from '@/components/ui';
 import { dateKey } from '@/lib/date';
 import { parseNum, peso } from '@/lib/format';
 import { useStore } from '@/lib/store';
@@ -44,21 +44,22 @@ export default function AddFood() {
 
   return (
     <KeyboardAvoidingView className="flex-1 bg-bg" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 20 : insets.top + 12, paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 16 }}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 20 : insets.top + 12, paddingHorizontal: GUTTER, paddingBottom: insets.bottom + 32, gap: 22 }}>
         <View className="flex-row items-center justify-between">
           <IconButton icon="close" onPress={() => router.back()} />
           <Text className="text-[16px] font-bold text-ink">Add food</Text>
-          <View style={{ width: 40 }} />
+          <View style={{ width: 44 }} />
         </View>
 
-        <Text className="px-1 text-[12px] font-semibold uppercase tracking-wider text-dim">Quick pick</Text>
+        <Text className="px-1 text-[13px] font-semibold text-sub">Quick pick</Text>
         <View className="flex-row flex-wrap" style={{ gap: 8 }}>
           {PRESETS.map((p) => (
             <Tap
               key={p.name}
               haptics="pick"
               onPress={() => setF({ name: p.name, kcal: String(p.kcal), protein: String(p.protein), carbs: String(p.carbs), fat: String(p.fat), cost: String(p.cost) })}
-              className={`rounded-2xl border px-3 py-2 ${f.name === p.name ? 'border-lime bg-lime/10' : 'border-line bg-card'}`}>
+              className="rounded-[18px] border px-4 py-3"
+              style={{ borderColor: f.name === p.name ? C.accent : C.line, backgroundColor: f.name === p.name ? 'rgba(226,35,45,0.12)' : C.card }}>
               <Text className="text-[13px] font-semibold text-ink">{p.name}</Text>
               <Text className="text-[11px] text-dim">
                 {p.kcal} kcal · {peso(p.cost)}
@@ -67,7 +68,7 @@ export default function AddFood() {
           ))}
         </View>
 
-        <Field label="Food" value={f.name} onChangeText={(name) => set({ name })} placeholder="e.g. 1 cup extra rice" />
+        <Field label="Food" value={f.name} onChangeText={(name) => set({ name })} placeholder="What did you eat?" />
         <View className="flex-row" style={{ gap: 10 }}>
           <Field label="Calories" suffix="kcal" keyboardType="number-pad" value={f.kcal} onChangeText={(kcal) => set({ kcal })} placeholder="0" />
           <Field label="Cost" prefix="₱" keyboardType="decimal-pad" value={f.cost} onChangeText={(cost) => set({ cost })} placeholder="0" />
@@ -78,12 +79,11 @@ export default function AddFood() {
           <Field label="Fat" suffix="g" keyboardType="number-pad" value={f.fat} onChangeText={(fat) => set({ fat })} placeholder="0" />
         </View>
 
-        <View className="flex-row items-center justify-between rounded-2xl border border-line bg-card p-4">
+        <View className="flex-row items-center justify-between rounded-[24px] border border-line bg-card px-5 py-4">
           <View className="flex-1">
-            <Text className="text-[15px] font-bold text-ink">Add cost to Wallet</Text>
-            <Text className="text-[12px] text-sub">Logs it as a Food expense today</Text>
+            <Text className="text-[16px] font-bold text-ink">Add cost to Wallet</Text>
           </View>
-          <Switch value={logCost} onValueChange={(v) => { haptic.pick(); setLogCost(v); }} trackColor={{ true: C.lime, false: C.raised }} thumbColor={C.ink} />
+          <Switch value={logCost} onValueChange={(v) => { haptic.pick(); setLogCost(v); }} trackColor={{ true: C.accent, false: C.raised }} thumbColor={C.ink} />
         </View>
 
         <Button label="Add" icon="checkmark" onPress={save} disabled={!valid} />

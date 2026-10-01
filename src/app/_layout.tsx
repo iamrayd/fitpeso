@@ -13,7 +13,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const theme = {
   ...DarkTheme,
-  colors: { ...DarkTheme.colors, background: C.bg, card: C.bg, primary: C.lime, text: C.ink, border: C.line },
+  colors: { ...DarkTheme.colors, background: C.bg, card: C.bg, primary: C.accent, text: C.ink, border: C.line },
 };
 
 export default function RootLayout() {

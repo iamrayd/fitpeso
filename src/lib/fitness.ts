@@ -16,19 +16,19 @@ export function bmi(p: Pick<Profile, 'heightCm' | 'weightKg'>): number {
 
 // Asia-Pacific cut-offs (WHO 2000 / used by the Philippine DOH). Filipinos carry
 // more body fat at the same BMI, so these are stricter than the global ones.
-export function bmiCategory(v: number): { label: string; color: string; note: string } {
-  if (v < 18.5) return { label: 'Underweight', color: '#5AB4FF', note: 'Build muscle and eat at maintenance or a small surplus.' };
-  if (v < 23) return { label: 'Normal', color: '#3DDC97', note: 'Healthy range. Focus on body composition, not the scale.' };
-  if (v < 25) return { label: 'Overweight', color: '#FFB547', note: 'A small, steady calorie deficit will help.' };
-  return { label: 'Obese', color: '#FF6B7A', note: 'Steady deficit plus daily walking is the priority.' };
+export function bmiCategory(v: number): { label: string; color: string } {
+  if (v < 18.5) return { label: 'Underweight', color: '#A3A3A3' };
+  if (v < 23) return { label: 'Normal', color: '#F5F5F5' };
+  if (v < 25) return { label: 'Overweight', color: '#F5A524' };
+  return { label: 'Obese', color: '#E2232D' };
 }
 
 /** BMI scale stops used to draw the gauge: [start, end, color]. */
 export const BMI_BANDS: [number, number, string][] = [
-  [15, 18.5, '#5AB4FF'],
-  [18.5, 23, '#3DDC97'],
-  [23, 25, '#FFB547'],
-  [25, 32, '#FF6B7A'],
+  [15, 18.5, '#6B6B6B'],
+  [18.5, 23, '#F5F5F5'],
+  [23, 25, '#F5A524'],
+  [25, 32, '#E2232D'],
 ];
 
 /** Waist-to-height ratio: the best quick indicator of belly (visceral) fat. */
@@ -38,10 +38,10 @@ export function whtr(p: Pick<Profile, 'heightCm' | 'waistCm'>): number | null {
 }
 
 export function whtrCategory(v: number): { label: string; color: string } {
-  if (v < 0.43) return { label: 'Slim', color: '#5AB4FF' };
-  if (v < 0.5) return { label: 'Healthy', color: '#3DDC97' };
-  if (v < 0.55) return { label: 'Belly fat: watch it', color: '#FFB547' };
-  return { label: 'Belly fat: high risk', color: '#FF6B7A' };
+  if (v < 0.43) return { label: 'Slim', color: '#A3A3A3' };
+  if (v < 0.5) return { label: 'Healthy', color: '#F5F5F5' };
+  if (v < 0.55) return { label: 'Watch it', color: '#F5A524' };
+  return { label: 'High', color: '#E2232D' };
 }
 
 /** Mifflin–St Jeor BMR. */

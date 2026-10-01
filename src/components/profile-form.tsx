@@ -1,9 +1,9 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { ACTIVITY, type Activity } from '@/lib/fitness';
 import { parseNum } from '@/lib/format';
 import type { Profile } from '@/lib/store';
-import { Card, Check, Field, Segmented, Tap } from './ui';
+import { Field, OptionCard, type IconName } from './ui';
 
 export type ProfileFormValue = {
   name: string;
@@ -29,63 +29,68 @@ export function profileToForm(p: Profile): ProfileFormValue {
   };
 }
 
-/** Returns a Profile, or an error message to show. */
-export function formToProfile(f: ProfileFormValue): Profile | string {
+/** Error message for the body numbers, or null when they're valid. */
+export function bodyError(f: ProfileFormValue): string | null {
   const age = parseNum(f.age);
-  const heightCm = parseNum(f.height);
-  const weightKg = parseNum(f.weight);
-  const waist = f.waist.trim() ? parseNum(f.waist) : null;
+  const height = parseNum(f.height);
+  const weight = parseNum(f.weight);
   if (!(age >= 13 && age <= 90)) return 'Enter your age (13–90).';
-  if (!(heightCm >= 120 && heightCm <= 230)) return 'Enter your height in cm (e.g. 170).';
-  if (!(weightKg >= 30 && weightKg <= 250)) return 'Enter your weight in kg (e.g. 60).';
-  if (waist !== null && !(waist >= 40 && waist <= 200)) return 'Waist should be in cm (e.g. 80), or leave it blank.';
-  return { name: f.name.trim() || 'Friend', sex: f.sex, age: Math.round(age), heightCm, weightKg, waistCm: waist, activity: f.activity };
+  if (!(height >= 120 && height <= 230)) return 'Enter your height in cm.';
+  if (!(weight >= 30 && weight <= 250)) return 'Enter your weight in kg.';
+  if (f.waist.trim() && !(parseNum(f.waist) >= 40 && parseNum(f.waist) <= 200)) return 'Waist should be in cm, or leave it blank.';
+  return null;
 }
 
-export function ProfileForm({ value: f, onChange }: { value: ProfileFormValue; onChange: (v: ProfileFormValue) => void }) {
+/** Returns a Profile, or an error message to show. */
+export function formToProfile(f: ProfileFormValue): Profile | string {
+  const err = bodyError(f);
+  if (err) return err;
+  return {
+    name: f.name.trim() || 'Friend',
+    sex: f.sex,
+    age: Math.round(parseNum(f.age)),
+    heightCm: parseNum(f.height),
+    weightKg: parseNum(f.weight),
+    waistCm: f.waist.trim() ? parseNum(f.waist) : null,
+    activity: f.activity,
+  };
+}
+
+type Props = { value: ProfileFormValue; onChange: (v: ProfileFormValue) => void };
+
+export function SexPicker({ value: f, onChange }: Props) {
+  return (
+    <View style={{ gap: 12 }}>
+      <OptionCard icon="male" title="Male" selected={f.sex === 'male'} onPress={() => onChange({ ...f, sex: 'male' })} />
+      <OptionCard icon="female" title="Female" selected={f.sex === 'female'} onPress={() => onChange({ ...f, sex: 'female' })} />
+    </View>
+  );
+}
+
+export function BodyFields({ value: f, onChange }: Props) {
   const set = (patch: Partial<ProfileFormValue>) => onChange({ ...f, ...patch });
   return (
-    <>
-      <Card>
-        <View style={{ gap: 14 }}>
-          <Text className="text-[17px] font-bold text-ink">About you</Text>
-          <Field label="Name" value={f.name} onChangeText={(name) => set({ name })} placeholder="Ray" autoCapitalize="words" />
-          <Segmented
-            value={f.sex}
-            onChange={(sex) => set({ sex })}
-            options={[
-              { value: 'male', label: 'Male' },
-              { value: 'female', label: 'Female' },
-            ]}
-          />
-          <View className="flex-row" style={{ gap: 10 }}>
-            <Field label="Age" keyboardType="number-pad" value={f.age} onChangeText={(age) => set({ age })} placeholder="25" />
-            <Field label="Height" suffix="cm" keyboardType="decimal-pad" value={f.height} onChangeText={(height) => set({ height })} placeholder="170" />
-          </View>
-          <View className="flex-row" style={{ gap: 10 }}>
-            <Field label="Weight" suffix="kg" keyboardType="decimal-pad" value={f.weight} onChangeText={(weight) => set({ weight })} placeholder="60" />
-            <Field label="Waist" suffix="cm" keyboardType="decimal-pad" value={f.waist} onChangeText={(waist) => set({ waist })} placeholder="80" />
-          </View>
-          <Text className="px-1 text-[12px] leading-[17px] text-dim">
-            Measure your waist at the belly button, relaxed, after breathing out. It tracks belly fat much better than the scale.
-          </Text>
-        </View>
-      </Card>
+    <View style={{ gap: 16 }}>
+      <View className="flex-row" style={{ gap: 12 }}>
+        <Field label="Age" keyboardType="number-pad" value={f.age} onChangeText={(age) => set({ age })} placeholder="25" />
+        <Field label="Height" suffix="cm" keyboardType="decimal-pad" value={f.height} onChangeText={(height) => set({ height })} placeholder="170" />
+      </View>
+      <View className="flex-row" style={{ gap: 12 }}>
+        <Field label="Weight" suffix="kg" keyboardType="decimal-pad" value={f.weight} onChangeText={(weight) => set({ weight })} placeholder="60" />
+        <Field label="Waist (optional)" suffix="cm" keyboardType="decimal-pad" value={f.waist} onChangeText={(waist) => set({ waist })} placeholder="80" />
+      </View>
+    </View>
+  );
+}
 
-      <Card>
-        <View style={{ gap: 10 }}>
-          <Text className="text-[17px] font-bold text-ink">Activity</Text>
-          {(Object.keys(ACTIVITY) as Activity[]).map((k) => (
-            <Tap key={k} haptics="pick" onPress={() => set({ activity: k })} className={`flex-row items-center rounded-2xl border p-3.5 ${f.activity === k ? 'border-lime bg-lime/10' : 'border-line bg-raised'}`} style={{ gap: 12 }}>
-              <Check on={f.activity === k} size={22} />
-              <View className="flex-1">
-                <Text className="text-[15px] font-bold text-ink">{ACTIVITY[k].label}</Text>
-                <Text className="text-[13px] text-sub">{ACTIVITY[k].hint}</Text>
-              </View>
-            </Tap>
-          ))}
-        </View>
-      </Card>
-    </>
+const ACTIVITY_ICON: Record<Activity, IconName> = { sedentary: 'desktop-outline', light: 'walk-outline', moderate: 'flame-outline' };
+
+export function ActivityPicker({ value: f, onChange }: Props) {
+  return (
+    <View style={{ gap: 12 }}>
+      {(Object.keys(ACTIVITY) as Activity[]).map((k) => (
+        <OptionCard key={k} icon={ACTIVITY_ICON[k]} title={ACTIVITY[k].label} hint={ACTIVITY[k].hint} selected={f.activity === k} onPress={() => onChange({ ...f, activity: k })} />
+      ))}
+    </View>
   );
 }

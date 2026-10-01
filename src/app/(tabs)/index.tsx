@@ -3,10 +3,10 @@ import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { Bar, C, Card, Check, Header, MacroBar, Pill, Ring, Screen, Stat, Tap } from '@/components/ui';
+import { Bar, C, Card, Check, Header, Label, MacroBar, Ring, Screen, Stat, Tap } from '@/components/ui';
 import { MEALS_BY_ID, SLOTS, mealCost, mealMacros } from '@/data/foods';
 import { POSTURE, PUSHUP_GOAL, WEEK } from '@/data/workouts';
-import { greeting, prettyDate, weekdayIndex } from '@/lib/date';
+import { prettyDate, weekdayIndex } from '@/lib/date';
 import { bmi, bmiCategory, whtr, whtrCategory } from '@/lib/fitness';
 import { peso } from '@/lib/format';
 import { useDayMeals, useEatenMacros, useTargets, useToday } from '@/lib/hooks';
@@ -40,48 +40,41 @@ export default function Today() {
   const nextMeal = nextSlot && dayMeals ? MEALS_BY_ID[dayMeals.plan[nextSlot.key]] : undefined;
 
   const b = bmi(profile);
-  const bc = bmiCategory(b);
   const w = whtr(profile);
 
   return (
     <Screen>
-      <Header eyebrow={prettyDate(today)} title={`${greeting()}, ${profile.name.split(' ')[0]}`} />
+      <Header eyebrow={prettyDate(today)} title={`Hi, ${profile.name.split(' ')[0]}`} />
 
       <Animated.View entering={enter(0)}>
         <Card>
-          <View className="flex-row items-center" style={{ gap: 18 }}>
-            <Ring size={128} stroke={13} progress={eaten.kcal / t.kcal} color={eaten.kcal > t.kcal ? C.rose : C.lime}>
-              <Text className="text-[26px] font-extrabold text-ink">{Math.abs(kcalLeft)}</Text>
-              <Text className="text-[11px] font-semibold uppercase tracking-wider text-sub">{kcalLeft >= 0 ? 'kcal left' : 'kcal over'}</Text>
+          <View className="flex-row items-center" style={{ gap: 22 }}>
+            <Ring size={136} stroke={14} progress={eaten.kcal / t.kcal} color={eaten.kcal > t.kcal ? C.warn : C.accent}>
+              <Text className="text-[30px] font-extrabold text-ink">{Math.abs(kcalLeft)}</Text>
+              <Text className="text-[12px] font-semibold text-sub">{kcalLeft >= 0 ? 'kcal left' : 'kcal over'}</Text>
             </Ring>
-            <View className="flex-1" style={{ gap: 12 }}>
-              <MacroBar label="Protein" value={eaten.protein} target={t.protein} color={C.lime} />
-              <MacroBar label="Carbs" value={eaten.carbs} target={t.carbs} color={C.sky} />
-              <MacroBar label="Fat" value={eaten.fat} target={t.fat} color={C.amber} />
+            <View className="flex-1" style={{ gap: 16 }}>
+              <MacroBar label="Protein" value={eaten.protein} target={t.protein} color={C.accent} />
+              <MacroBar label="Carbs" value={eaten.carbs} target={t.carbs} color={C.ink} />
+              <MacroBar label="Fat" value={eaten.fat} target={t.fat} color={C.dim} />
             </View>
           </View>
-          <Text className="mt-3 text-[12px] text-dim">
-            {eaten.kcal} of {t.kcal} kcal eaten · protein is the priority for losing belly fat
-          </Text>
         </Card>
       </Animated.View>
 
-      <Animated.View entering={enter(1)} style={{ flexDirection: 'row', gap: 14 }}>
+      <Animated.View entering={enter(1)} style={{ flexDirection: 'row', gap: 16 }}>
         <Card className="flex-1">
-          <View style={{ gap: 10 }}>
-            <View className="flex-row items-center justify-between">
-              <Text className="text-[13px] font-bold uppercase tracking-wider text-sub">Push-ups</Text>
-              {pushups >= PUSHUP_GOAL ? <Ionicons name="trophy" size={16} color={C.amber} /> : null}
-            </View>
-            <Text className="text-[30px] font-extrabold text-ink">
+          <View style={{ gap: 14 }}>
+            <Label right={pushups >= PUSHUP_GOAL ? <Ionicons name="trophy" size={16} color={C.warn} /> : undefined}>Push-ups</Label>
+            <Text className="text-[34px] font-extrabold text-ink">
               {pushups}
-              <Text className="text-[16px] text-dim">/{PUSHUP_GOAL}</Text>
+              <Text className="text-[16px] text-dim"> /{PUSHUP_GOAL}</Text>
             </Text>
-            <Bar progress={pushups / PUSHUP_GOAL} color={C.lime} overColor={C.lime} />
-            <View className="flex-row" style={{ gap: 6 }}>
+            <Bar progress={pushups / PUSHUP_GOAL} overColor={C.accent} />
+            <View className="flex-row" style={{ gap: 8 }}>
               {[10, 20].map((n) => (
-                <Tap key={n} onPress={() => addPushups(today, n)} haptics={pushups + n >= PUSHUP_GOAL && pushups < PUSHUP_GOAL ? 'success' : 'tap'} className="flex-1 items-center rounded-xl bg-raised py-2">
-                  <Text className="text-[14px] font-bold text-lime">+{n}</Text>
+                <Tap key={n} onPress={() => addPushups(today, n)} haptics={pushups < PUSHUP_GOAL && pushups + n >= PUSHUP_GOAL ? 'success' : 'tap'} className="flex-1 items-center rounded-2xl bg-raised py-3">
+                  <Text className="text-[15px] font-bold text-ink">+{n}</Text>
                 </Tap>
               ))}
             </View>
@@ -90,13 +83,13 @@ export default function Today() {
 
         <Tap className="flex-1" haptics="pick" onPress={() => router.navigate('/wallet')}>
           <Card className="flex-1">
-            <View style={{ gap: 10 }}>
-              <Text className="text-[13px] font-bold uppercase tracking-wider text-sub">Wallet</Text>
-              <Text className={`text-[30px] font-extrabold ${left < 0 ? 'text-rose' : 'text-ink'}`}>{peso(left)}</Text>
-              <Bar progress={budget ? spent / budget : 0} color={C.amber} />
-              <Text className="text-[12px] text-sub">
-                {left >= 0 ? 'left today' : 'over budget'} · spent {peso(spent)}
+            <View style={{ gap: 14 }}>
+              <Label>Wallet</Label>
+              <Text className={`text-[34px] font-extrabold ${left < 0 ? 'text-glow' : 'text-ink'}`} numberOfLines={1} adjustsFontSizeToFit>
+                {peso(left)}
               </Text>
+              <Bar progress={budget ? spent / budget : 0} color={C.ink} overColor={C.accent} />
+              <Text className="text-[13px] text-sub">{left >= 0 ? 'left today' : 'over budget'}</Text>
             </View>
           </Card>
         </Tap>
@@ -105,15 +98,14 @@ export default function Today() {
       <Animated.View entering={enter(2)}>
         <Tap haptics="pick" onPress={() => router.navigate('/workout')}>
           <Card>
-            <View className="flex-row items-center" style={{ gap: 14 }}>
-              <Ring size={58} stroke={7} progress={allIds.length ? doneCount / allIds.length : 0} color={C.mint}>
-                <Ionicons name="barbell" size={20} color={C.mint} />
+            <View className="flex-row items-center" style={{ gap: 16 }}>
+              <Ring size={60} stroke={7} progress={allIds.length ? doneCount / allIds.length : 0}>
+                <Ionicons name="barbell" size={22} color={C.accent} />
               </Ring>
-              <View className="flex-1" style={{ gap: 3 }}>
-                <Text className="text-[12px] font-bold uppercase tracking-wider text-sub">Today’s training</Text>
-                <Text className="text-[18px] font-bold text-ink">{plan.title}</Text>
+              <View className="flex-1" style={{ gap: 4 }}>
+                <Text className="text-[19px] font-bold text-ink">{plan.title}</Text>
                 <Text className="text-[13px] text-sub">
-                  {doneCount}/{allIds.length} done · ~{plan.minutes + 10} min with posture work
+                  {doneCount}/{allIds.length} done
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={C.dim} />
@@ -125,25 +117,20 @@ export default function Today() {
       <Animated.View entering={enter(3)}>
         <Card>
           {nextMeal && nextSlot ? (
-            <View style={{ gap: 10 }}>
-              <View className="flex-row items-center justify-between">
-                <Text className="text-[12px] font-bold uppercase tracking-wider text-sub">Up next · {nextSlot.label}</Text>
-                <Pill label={peso(mealCost(nextMeal, priceFactor))} color={C.amber} />
+            <Tap haptics="success" onPress={() => toggleEaten(today, nextSlot.key)} className="flex-row items-center" style={{ gap: 16 }}>
+              <View className="flex-1" style={{ gap: 6 }}>
+                <Label>{`Next · ${nextSlot.label}`}</Label>
+                <Text className="text-[18px] font-bold leading-[24px] text-ink">{nextMeal.name}</Text>
+                <Text className="text-[13px] text-sub">
+                  {peso(mealCost(nextMeal, priceFactor))} · {mealMacros(nextMeal).kcal} kcal · {mealMacros(nextMeal).protein}g protein
+                </Text>
               </View>
-              <Tap haptics="success" onPress={() => toggleEaten(today, nextSlot.key)} className="flex-row items-center" style={{ gap: 12 }}>
-                <View className="flex-1">
-                  <Text className="text-[17px] font-bold text-ink">{nextMeal.name}</Text>
-                  <Text className="text-[13px] text-sub">
-                    {mealMacros(nextMeal).kcal} kcal · {mealMacros(nextMeal).protein} g protein
-                  </Text>
-                </View>
-                <Check on={false} />
-              </Tap>
-            </View>
+              <Check on={false} size={32} />
+            </Tap>
           ) : (
-            <View className="flex-row items-center" style={{ gap: 12 }}>
-              <Ionicons name="checkmark-done-circle" size={30} color={C.lime} />
-              <Text className="flex-1 text-[15px] font-semibold text-ink">All of today’s meals are logged. Nice!</Text>
+            <View className="flex-row items-center" style={{ gap: 14 }}>
+              <Ionicons name="checkmark-done-circle" size={30} color={C.accent} />
+              <Text className="flex-1 text-[16px] font-semibold text-ink">All meals logged today</Text>
             </View>
           )}
         </Card>
@@ -153,9 +140,9 @@ export default function Today() {
         <Tap haptics="pick" onPress={() => router.navigate('/me')}>
           <Card>
             <View className="flex-row" style={{ gap: 12 }}>
-              <Stat label="BMI" value={b.toFixed(1)} sub={bc.label} color={bc.color} />
-              <Stat label="Weight" value={`${profile.weightKg} kg`} sub={`${profile.heightCm} cm`} />
-              {w ? <Stat label="Waist / height" value={w.toFixed(2)} sub={whtrCategory(w).label} color={whtrCategory(w).color} /> : <Stat label="Waist" value="—" sub="Add in Me" />}
+              <Stat label="BMI" value={b.toFixed(1)} color={bmiCategory(b).color} />
+              <Stat label="Weight" value={`${profile.weightKg}kg`} />
+              <Stat label="Waist/height" value={w ? w.toFixed(2) : '—'} color={w ? whtrCategory(w).color : C.dim} />
             </View>
           </Card>
         </Tap>

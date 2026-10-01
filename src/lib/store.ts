@@ -29,16 +29,16 @@ export type DayMeals = {
 export type DayWorkout = { done: string[]; pushups: number };
 
 export const CATEGORIES = {
-  food: { label: 'Food', icon: 'fast-food-outline', color: '#C6F432' },
-  groceries: { label: 'Groceries', icon: 'basket-outline', color: '#3DDC97' },
-  transport: { label: 'Transport', icon: 'bus-outline', color: '#5AB4FF' },
-  bills: { label: 'Bills', icon: 'flash-outline', color: '#FFB547' },
-  load: { label: 'Load/Data', icon: 'phone-portrait-outline', color: '#A78BFA' },
-  health: { label: 'Health', icon: 'medkit-outline', color: '#FF8FA3' },
-  shopping: { label: 'Shopping', icon: 'bag-handle-outline', color: '#F472B6' },
-  fun: { label: 'Leisure', icon: 'game-controller-outline', color: '#FB923C' },
-  family: { label: 'Family', icon: 'heart-outline', color: '#FF6B7A' },
-  other: { label: 'Other', icon: 'ellipsis-horizontal', color: '#9BA1AD' },
+  food: { label: 'Food', icon: 'fast-food-outline' },
+  groceries: { label: 'Groceries', icon: 'basket-outline' },
+  transport: { label: 'Transport', icon: 'bus-outline' },
+  bills: { label: 'Bills', icon: 'flash-outline' },
+  load: { label: 'Load/Data', icon: 'phone-portrait-outline' },
+  health: { label: 'Health', icon: 'medkit-outline' },
+  shopping: { label: 'Shopping', icon: 'bag-handle-outline' },
+  fun: { label: 'Leisure', icon: 'game-controller-outline' },
+  family: { label: 'Family', icon: 'heart-outline' },
+  other: { label: 'Other', icon: 'ellipsis-horizontal' },
 } as const;
 export type Category = keyof typeof CATEGORIES;
 
