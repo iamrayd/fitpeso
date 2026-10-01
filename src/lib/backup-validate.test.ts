@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 
 import { SCHEMA, migrateData, parseBackup } from './backup-validate';
 import { defaultAccounts } from './money-meta';
+import { DEFAULT_REMINDERS } from './reminders-plan';
 import type { AppData } from './store';
 
 // Mirrors the store's initial state (the store itself imports React Native, so it can't load in Node).
@@ -23,6 +24,8 @@ const defaults: AppData = {
   accounts: defaultAccounts(),
   incomes: [],
   lastAccountId: null,
+  transfers: [],
+  reminders: DEFAULT_REMINDERS,
 };
 
 const profile = { name: 'Ray', sex: 'male', age: 24, heightCm: 170, weightKg: 60, waistCm: 86, activity: 'light' } as const;
@@ -40,6 +43,8 @@ const goodData: AppData = {
   ],
   salary: 18000,
   lastAccountId: 'cash',
+  transfers: [{ id: 't1', day: '2026-10-01', ts: 3, amount: 200, fromId: 'cash', toId: 'gcash', note: 'Cash-in' }],
+  reminders: { ...DEFAULT_REMINDERS, pushups: { on: true, hour: 19, minute: 30 } },
 };
 
 const file = (data: unknown, schema = SCHEMA, app = 'fitpeso') => JSON.stringify({ app, schema, exportedAt: '2026-10-01T00:00:00Z', data });
@@ -118,22 +123,48 @@ describe('parseBackup', () => {
   });
 
   it('upgrades a version 1 backup (before wallets existed)', () => {
-    const { accounts: _a, incomes: _i, lastAccountId: _l, ...v1 } = goodData;
+    const { accounts: _a, incomes: _i, lastAccountId: _l, transfers: _t, reminders: _r, ...v1 } = goodData;
     const r = parseBackup(file(v1, 1), defaults);
     assert.ok(r.ok);
     assert.deepEqual(r.data.accounts, defaultAccounts());
     assert.deepEqual(r.data.incomes, []);
+    assert.deepEqual(r.data.transfers, []);
+    assert.deepEqual(r.data.reminders, DEFAULT_REMINDERS);
     assert.equal(r.data.expenses.length, 1);
+  });
+
+  it('upgrades a version 2 backup (before transfers and reminders)', () => {
+    const { transfers: _t, reminders: _r, ...v2 } = goodData;
+    const r = parseBackup(file(v2, 2), defaults);
+    assert.ok(r.ok);
+    assert.deepEqual(r.data.accounts, goodData.accounts);
+    assert.deepEqual(r.data.transfers, []);
+    assert.deepEqual(r.data.reminders, DEFAULT_REMINDERS);
+  });
+
+  it('drops transfers to the same wallet or with bad amounts', () => {
+    const t = goodData.transfers[0];
+    const r = parseBackup(file({ ...goodData, transfers: [t, { ...t, id: 't2', toId: 'cash' }, { ...t, id: 't3', amount: 0 }] }), defaults);
+    assert.ok(r.ok);
+    assert.deepEqual(r.data.transfers.map((x) => x.id), ['t1']);
+    assert.equal(r.skipped, 2);
+  });
+
+  it('resets invalid reminder times to the defaults', () => {
+    const r = parseBackup(file({ ...goodData, reminders: { pushups: { on: true, hour: 25, minute: 0 }, spending: 'yes' } }), defaults);
+    assert.ok(r.ok);
+    assert.deepEqual(r.data.reminders, DEFAULT_REMINDERS);
   });
 });
 
 describe('migrateData', () => {
-  it('adds wallets to version 1 data and leaves version 2 data alone', () => {
-    assert.deepEqual(migrateData({ salary: 1 }, 1), { salary: 1, accounts: defaultAccounts(), incomes: [], lastAccountId: null });
-    assert.deepEqual(migrateData({ salary: 1 }, 2), { salary: 1 });
+  it('adds what each version introduced, and leaves current data alone', () => {
+    assert.deepEqual(migrateData({ salary: 1 }, 1), { salary: 1, accounts: defaultAccounts(), incomes: [], lastAccountId: null, transfers: [], reminders: DEFAULT_REMINDERS });
+    assert.deepEqual(migrateData({ salary: 1, accounts: [] }, 2), { salary: 1, accounts: [], transfers: [], reminders: DEFAULT_REMINDERS });
+    assert.deepEqual(migrateData({ salary: 1 }, SCHEMA), { salary: 1 });
   });
 
   it('survives empty storage', () => {
-    assert.deepEqual(migrateData(undefined, 2), {});
+    assert.deepEqual(migrateData(undefined, SCHEMA), {});
   });
 });

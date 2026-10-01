@@ -5,7 +5,7 @@ A personal fitness and wallet tracker built for one goal: **lose the belly fat o
 - **Today**: calories and macros eaten vs target, 100 push-up counter, money left today, next meal, BMI and waist-to-height.
 - **Train**: a 7-day plan for 2 dumbbells plus bodyweight, a daily 10-minute posture routine for anterior pelvic tilt, and the 100 push-ups tracker.
 - **Meals**: a breakfast, lunch, snack and dinner plan each day that fits your food budget (default ₱200) and hits your protein target, with Cebu market prices for every ingredient. Swap any meal, re-plan the day, or log food you ate outside the plan.
-- **Wallet**: balances per wallet (Cash, GCash, Bank, plus any you add) that update as you log expenses and money in; daily budget, quick expense logging by category, a pay-period view (kinsenas or monthly) that tells you how much you can safely spend per day until payday, a 7-day chart, and a category breakdown.
+- **Wallet**: balances per wallet (Cash, GCash, Bank, plus any you add) that update as you log expenses and money in, transfers between wallets (e.g. cash-in to GCash); daily budget, quick expense logging by category, a pay-period view (kinsenas or monthly) that tells you how much you can safely spend per day until payday, a 7-day chart, and a category breakdown.
 - **Me**: BMI (Asia-Pacific cut-offs), a belly-fat tracker (waist-to-height), daily targets, a weight/waist log with trend, and settings.
 
 All data stays on your phone. No account, no server, works offline.
@@ -61,6 +61,10 @@ src/
 ## Updating prices
 
 Prices in `src/data/foods.ts` are estimates for Cebu City markets in late 2026. To scale them all quickly, use **Me → Settings → Market prices** (−10% to +25%), or edit the `cost` of any ingredient in that file.
+
+## Reminders
+
+**Me → Reminders** has three optional reminders with times you pick: push-ups (daily), log spending (daily) and a waist check (Sundays). They skip themselves when not needed: no push-up reminder once you hit 100, no spending reminder if you already logged something that day, no waist reminder if you measured that week.
 
 ## Backup
 

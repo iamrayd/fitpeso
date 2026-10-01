@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { C } from '@/components/ui';
+import { startReminderSync } from '@/lib/reminders';
 import { useHydrated } from '@/lib/store';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -23,6 +24,9 @@ export default function RootLayout() {
     if (hydrated) SplashScreen.hideAsync().catch(() => {});
   }, [hydrated]);
 
+  // Reminders are rescheduled from saved data, so start only once it has loaded.
+  useEffect(() => (hydrated ? startReminderSync() : undefined), [hydrated]);
+
   // Keep the splash up until saved data is loaded, so nothing flickers.
   if (!hydrated) return null;
 
@@ -37,6 +41,7 @@ export default function RootLayout() {
           <Stack.Screen name="add-food" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           <Stack.Screen name="add-money" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           <Stack.Screen name="account" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="transfer" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         </Stack>
       </ThemeProvider>
     </GestureHandlerRootView>

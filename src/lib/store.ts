@@ -6,7 +6,9 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { MEALS_BY_ID, mealCost, type Slot } from '@/data/foods';
 import { migrateData, SCHEMA } from './backup-validate';
 import type { Activity, Macros } from './fitness';
+import { baseFor } from './ledger';
 import { defaultAccounts, type AccountIcon, type Category } from './money-meta';
+import { DEFAULT_REMINDERS, type ReminderKey, type ReminderSetting, type Reminders } from './reminders-plan';
 
 export type Profile = {
   name: string;
@@ -31,6 +33,7 @@ export type DayMeals = {
 export type DayWorkout = { done: string[]; pushups: number };
 
 export { ACCOUNT_ICONS, CATEGORIES, type AccountIcon, type Category } from './money-meta';
+export { balanceOf } from './ledger';
 
 export type Expense = {
   id: string;
@@ -54,6 +57,12 @@ export type Account = { id: string; name: string; icon: AccountIcon; base: numbe
 
 export type Income = { id: string; day: string; ts: number; amount: number; accountId: string; note: string };
 
+/** Moving money between your own wallets (e.g. cash-in to GCash). Not spending, not income. */
+export type Transfer = { id: string; day: string; ts: number; amount: number; fromId: string; toId: string; note: string };
+
+/** Every money movement that affects wallet balances. */
+export type Ledger = { incomes: Income[]; expenses: Expense[]; transfers: Transfer[] };
+
 export type PaySchedule = 'monthly' | 'kinsenas';
 
 /** Everything that gets saved (and backed up). */
@@ -76,6 +85,8 @@ type State = {
   incomes: Income[];
   /** Wallet picked last time, used as the default for the next entry. */
   lastAccountId: string | null;
+  transfers: Transfer[];
+  reminders: Reminders;
 };
 
 type Actions = {
@@ -100,6 +111,12 @@ type Actions = {
   updateIncome: (id: string, patch: Partial<Pick<Income, 'amount' | 'note' | 'accountId'>>) => void;
   /** Replaces everything with validated backup data. */
   importData: (data: AppData) => void;
+
+  addTransfer: (t: Omit<Transfer, 'id' | 'ts'> & { ts?: number }) => void;
+  updateTransfer: (id: string, patch: Partial<Pick<Transfer, 'amount' | 'fromId' | 'toId' | 'note'>>) => void;
+  removeTransfer: (id: string) => void;
+
+  setReminder: (key: ReminderKey, patch: Partial<ReminderSetting>) => void;
 
   addIncome: (i: Omit<Income, 'id' | 'ts'> & { ts?: number }) => void;
   removeIncome: (id: string) => void;
@@ -126,6 +143,8 @@ export const initial: State = {
   accounts: defaultAccounts(),
   incomes: [],
   lastAccountId: null,
+  transfers: [],
+  reminders: DEFAULT_REMINDERS,
 };
 
 
@@ -242,6 +261,14 @@ export const useStore = create<State & Actions>()(
 
       importData: (data) => set({ ...data }),
 
+      addTransfer: (t) => set((s) => ({ transfers: [...s.transfers, { ...t, id: uid(), ts: t.ts ?? Date.now() }] })),
+
+      updateTransfer: (id, patch) => set((s) => ({ transfers: s.transfers.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
+
+      removeTransfer: (id) => set((s) => ({ transfers: s.transfers.filter((t) => t.id !== id) })),
+
+      setReminder: (key, patch) => set((s) => ({ reminders: { ...s.reminders, [key]: { ...s.reminders[key], ...patch } } })),
+
       addIncome: (i) =>
         set((s) => ({ incomes: [...s.incomes, { ...i, id: uid(), ts: i.ts ?? Date.now() }], lastAccountId: i.accountId })),
 
@@ -259,7 +286,7 @@ export const useStore = create<State & Actions>()(
             if (a.id !== id) return a;
             const next = { ...a, ...(patch.name !== undefined ? { name: patch.name } : {}), ...(patch.icon ? { icon: patch.icon } : {}) };
             // Move the base so the computed balance lands exactly on what was typed.
-            if (patch.balance !== undefined) next.base = patch.balance - movement(a.id, s.incomes, s.expenses);
+            if (patch.balance !== undefined) next.base = baseFor(a.id, patch.balance, s);
             return next;
           }),
         })),
@@ -287,17 +314,6 @@ function upsertBody(list: BodyLog[], entry: BodyLog): BodyLog[] {
   return [...list.filter((b) => b.day !== entry.day), entry].sort((a, b) => a.day.localeCompare(b.day));
 }
 
-/** Money in minus money out for one wallet, excluding its base. */
-function movement(accountId: string, incomes: Income[], expenses: Expense[]): number {
-  let n = 0;
-  for (const i of incomes) if (i.accountId === accountId) n += i.amount;
-  for (const e of expenses) if (e.accountId === accountId) n -= e.amount;
-  return n;
-}
-
-export function balanceOf(a: Account, incomes: Income[], expenses: Expense[]): number {
-  return Math.round((a.base + movement(a.id, incomes, expenses)) * 100) / 100;
-}
 
 /** The wallet to use when none is picked: the last one used, else the first. */
 export function defaultAccountId(s: Pick<State, 'accounts' | 'lastAccountId'>): string | undefined {

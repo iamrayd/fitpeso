@@ -22,8 +22,7 @@ export default function AccountScreen() {
   const [icon, setIcon] = useState<AccountIcon>(account?.icon ?? 'wallet-outline');
   const [balance, setBalance] = useState(() => {
     if (!account) return '';
-    const { incomes, expenses } = useStore.getState();
-    return String(balanceOf(account, incomes, expenses));
+    return String(balanceOf(account, useStore.getState()));
   });
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);

@@ -1,9 +1,10 @@
 // Pure functions (no React Native imports) so they can be tested in Node.
 import type { AppData } from './store';
 import { ACCOUNT_ICONS, CATEGORIES, defaultAccounts } from './money-meta';
+import { DEFAULT_REMINDERS, type ReminderKey } from './reminders-plan';
 
 /** Version of the saved-data shape. Bump it and extend migrateData() when the shape changes. */
-export const SCHEMA = 2;
+export const SCHEMA = 3;
 
 export type BackupFile = { app: 'fitpeso'; schema: number; exportedAt: string; data: AppData };
 
@@ -22,6 +23,11 @@ export function migrateData(persisted: unknown, version: number): Rec {
     old.accounts = defaultAccounts();
     old.incomes = [];
     old.lastAccountId = null;
+  }
+  if (version < 3) {
+    // v3 added wallet transfers and reminders (off until you turn them on).
+    old.transfers = [];
+    old.reminders = DEFAULT_REMINDERS;
   }
   return old;
 }
@@ -132,6 +138,21 @@ export function parseBackup(text: string, defaults: AppData): ParseResult {
   );
   if (!accounts.length) accounts = defaultAccounts();
 
+  // Transfers touching a deleted wallet are kept, like expenses; they just stop affecting that balance.
+  const transfers = keep(d.transfers, (t) =>
+    isStr(t.id) && isStr(t.day) && DAY.test(t.day) && isNum(t.ts) && isNum(t.amount) && t.amount > 0 && isStr(t.fromId) && isStr(t.toId) && t.fromId !== t.toId
+      ? { id: t.id, day: t.day, ts: t.ts, amount: t.amount, fromId: t.fromId, toId: t.toId, note: isStr(t.note) ? t.note : '' }
+      : null,
+  );
+
+  const reminders = { ...DEFAULT_REMINDERS };
+  if (isObj(d.reminders))
+    for (const key of Object.keys(DEFAULT_REMINDERS) as ReminderKey[]) {
+      const r = (d.reminders as Rec)[key];
+      if (isObj(r) && typeof r.on === 'boolean' && isNum(r.hour) && r.hour >= 0 && r.hour <= 23 && isNum(r.minute) && r.minute >= 0 && r.minute <= 59)
+        reminders[key] = { on: r.on, hour: Math.floor(r.hour), minute: Math.floor(r.minute) };
+    }
+
   const dailyBudgets: Record<string, number> = {};
   if (isObj(d.dailyBudgets)) for (const [day, v] of Object.entries(d.dailyBudgets)) if (DAY.test(day) && isNum(v) && v >= 0) dailyBudgets[day] = v;
 
@@ -149,6 +170,8 @@ export function parseBackup(text: string, defaults: AppData): ParseResult {
       expenses,
       incomes,
       accounts,
+      transfers,
+      reminders,
       dailyBudgets,
       foodBudget: num(d.foodBudget, defaults.foodBudget, 80, 100_000),
       priceFactor: num(d.priceFactor, defaults.priceFactor, 0.5, 2),

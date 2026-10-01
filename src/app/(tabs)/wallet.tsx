@@ -8,7 +8,7 @@ import { Bar, Button, C, Card, Field, Header, IconButton, Ring, Screen, SectionT
 import { addDays, fromKey, relativeDay, timeLabel } from '@/lib/date';
 import { parseNum, peso } from '@/lib/format';
 import { useToday } from '@/lib/hooks';
-import { CATEGORIES, balanceOf, budgetFor, useStore, type Account, type Expense, type Income } from '@/lib/store';
+import { CATEGORIES, balanceOf, budgetFor, useStore, type Account, type Expense, type Income, type Transfer } from '@/lib/store';
 import { byCategory, inRange, last7, payPeriod, totalOf } from '@/lib/wallet';
 
 const SHORT_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -24,6 +24,7 @@ export default function Wallet() {
   }
   const expenses = useStore((s) => s.expenses);
   const incomes = useStore((s) => s.incomes);
+  const transfers = useStore((s) => s.transfers);
   const accounts = useStore((s) => s.accounts);
   const dailyBudgets = useStore((s) => s.dailyBudgets);
   const defaultDailyBudget = useStore((s) => s.defaultDailyBudget);
@@ -40,12 +41,14 @@ export default function Wallet() {
   // Everything that happened on the day, money in and out, newest first.
   const activity = useMemo(
     () =>
-      [...dayList.map((e) => ({ kind: 'out' as const, e })), ...incomes.filter((i) => i.day === day).map((i) => ({ kind: 'in' as const, i }))].sort(
-        (a, b) => (b.kind === 'out' ? b.e.ts : b.i.ts) - (a.kind === 'out' ? a.e.ts : a.i.ts),
-      ),
-    [dayList, incomes, day],
+      [
+        ...dayList.map((e) => ({ kind: 'out' as const, ts: e.ts, e })),
+        ...incomes.filter((i) => i.day === day).map((i) => ({ kind: 'in' as const, ts: i.ts, i })),
+        ...transfers.filter((t) => t.day === day).map((t) => ({ kind: 'move' as const, ts: t.ts, t })),
+      ].sort((a, b) => b.ts - a.ts),
+    [dayList, incomes, transfers, day],
   );
-  const balances = accounts.map((a) => ({ a, bal: balanceOf(a, incomes, expenses) }));
+  const balances = accounts.map((a) => ({ a, bal: balanceOf(a, { incomes, expenses, transfers }) }));
   const total = balances.reduce((n, x) => n + x.bal, 0);
   const accountName = (id?: string) => accounts.find((a) => a.id === id)?.name;
   const left = budget - spent;
@@ -75,7 +78,15 @@ export default function Wallet() {
       <Card>
         <View style={{ gap: 18 }}>
           <View style={{ gap: 4 }}>
-            <Text className="text-[13px] font-semibold text-sub">Total balance</Text>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[13px] font-semibold text-sub">Total balance</Text>
+              {accounts.length > 1 ? (
+                <Tap onPress={() => router.push('/transfer')} accessibilityLabel="Transfer between wallets" hitSlop={8} className="flex-row items-center rounded-full bg-raised px-3 py-2" style={{ gap: 6 }}>
+                  <Ionicons name="swap-horizontal" size={15} color={C.ink} />
+                  <Text className="text-[13px] font-bold text-ink">Transfer</Text>
+                </Tap>
+              ) : null}
+            </View>
             <Text className={`text-[40px] font-extrabold tracking-tight ${total < 0 ? 'text-warn' : 'text-ink'}`} numberOfLines={1} adjustsFontSizeToFit>
               {peso(total, total % 1 !== 0)}
             </Text>
@@ -148,7 +159,15 @@ export default function Wallet() {
         </View>
       ) : (
         <View style={{ gap: 10 }}>
-          {activity.map((x) => (x.kind === 'out' ? <ExpenseRow key={x.e.id} e={x.e} wallet={accountName(x.e.accountId)} /> : <IncomeRow key={x.i.id} i={x.i} wallet={accountName(x.i.accountId)} />))}
+          {activity.map((x) =>
+            x.kind === 'out' ? (
+              <ExpenseRow key={x.e.id} e={x.e} wallet={accountName(x.e.accountId)} />
+            ) : x.kind === 'in' ? (
+              <IncomeRow key={x.i.id} i={x.i} wallet={accountName(x.i.accountId)} />
+            ) : (
+              <TransferRow key={x.t.id} t={x.t} from={accountName(x.t.fromId)} to={accountName(x.t.toId)} />
+            ),
+          )}
         </View>
       )}
 
@@ -257,6 +276,35 @@ function AccountTile({ a, balance }: { a: Account; balance: number }) {
         </Text>
       </View>
     </Tap>
+  );
+}
+
+function TransferRow({ t, from, to }: { t: Transfer; from?: string; to?: string }) {
+  const amount = peso(t.amount, t.amount % 1 !== 0);
+  const route = `${from ?? 'Deleted wallet'} → ${to ?? 'Deleted wallet'}`;
+  return (
+    <Animated.View entering={FadeInDown.duration(260)} exiting={FadeOut.duration(180)} layout={LinearTransition.duration(220)}>
+      <Tap
+        onPress={() => router.push({ pathname: '/transfer', params: { id: t.id } })}
+        accessibilityLabel={`Transfer, ${amount} from ${from ?? 'deleted wallet'} to ${to ?? 'deleted wallet'}${t.note ? `, ${t.note}` : ''}, ${timeLabel(t.ts)}`}
+        accessibilityHint="Opens to edit or delete"
+        className="flex-row items-center rounded-[24px] border border-line bg-card px-4 py-4"
+        style={{ gap: 14 }}>
+        <View className="h-12 w-12 items-center justify-center rounded-2xl bg-raised">
+          <Ionicons name="swap-horizontal" size={21} color={C.sub} />
+        </View>
+        <View className="flex-1" style={{ gap: 2 }}>
+          <Text className="text-[16px] font-bold text-ink" numberOfLines={1}>
+            {route}
+          </Text>
+          <Text className="text-[13px] text-sub" numberOfLines={1}>
+            {t.note ? `${t.note} · ` : ''}
+            {timeLabel(t.ts)}
+          </Text>
+        </View>
+        <Text className="text-[17px] font-extrabold text-sub">{amount}</Text>
+      </Tap>
+    </Animated.View>
   );
 }
 

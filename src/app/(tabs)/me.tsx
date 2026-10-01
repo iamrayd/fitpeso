@@ -6,6 +6,7 @@ import Svg, { Circle, Polyline } from 'react-native-svg';
 import { useShallow } from 'zustand/react/shallow';
 
 import { BackupCard } from '@/components/backup-card';
+import { RemindersCard } from '@/components/reminders-card';
 import { ActivityPicker, BodyFields, SexPicker, formToProfile, profileToForm } from '@/components/profile-form';
 import { Button, C, Card, Field, Header, Label, Screen, SectionTitle, Segmented, Stat, Tap } from '@/components/ui';
 import { prettyDate } from '@/lib/date';
@@ -197,6 +198,9 @@ export default function Me() {
           </View>
         </Card>
       )}
+
+      <SectionTitle>Reminders</SectionTitle>
+      <RemindersCard />
 
       <SectionTitle>Settings</SectionTitle>
       <Card>
