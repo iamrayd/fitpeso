@@ -47,21 +47,23 @@ export default function Meals() {
 
   return (
     <Screen>
-      <Header eyebrow={prettyDate(today)} title="Meals" right={<IconButton icon="shuffle" onPress={replan} />} />
+      <Header eyebrow={prettyDate(today)} title="Meals" right={<IconButton icon="shuffle" label="Re-plan today’s meals" onPress={replan} />} />
 
       <Card>
         <View style={{ gap: 18 }}>
           <Label
             right={
               <View className="flex-row items-center" style={{ gap: 10 }}>
-                <IconButton icon="remove" size={34} onPress={() => changeBudget(-20)} />
-                <Text className="w-[70px] text-center text-[18px] font-extrabold text-ink">{peso(foodBudget)}</Text>
-                <IconButton icon="add" size={34} onPress={() => changeBudget(20)} />
+                <IconButton icon="remove" label="Lower food budget by 20 pesos" size={34} onPress={() => changeBudget(-20)} />
+                <Text className="min-w-[70px] text-center text-[18px] font-extrabold text-ink" maxFontSizeMultiplier={1.3} accessibilityLabel={`Food budget ${peso(foodBudget)} a day`}>
+                  {peso(foodBudget)}
+                </Text>
+                <IconButton icon="add" label="Raise food budget by 20 pesos" size={34} onPress={() => changeBudget(20)} />
               </View>
             }>
             Food budget
           </Label>
-          <Bar progress={totals.cost / foodBudget} />
+          <Bar progress={totals.cost / foodBudget} label={`Plan costs ${peso(totals.cost)} of ${peso(foodBudget)}`} />
           <View className="flex-row" style={{ gap: 12 }}>
             <Stat label="Plan" value={peso(totals.cost)} color={over ? C.warn : C.ink} />
             <Stat label="Calories" value={`${totals.kcal}`} sub={`of ${t.kcal}`} />
@@ -87,8 +89,10 @@ export default function Meals() {
         return (
           <Animated.View key={slot.key} entering={FadeInDown.delay(i * 60).duration(350)} layout={LinearTransition.duration(240)}>
             <Tap
-             
               onPress={() => setOpen(isOpen ? null : slot.key)}
+              accessibilityLabel={`${slot.label}: ${meal.name}, ${peso(mealCost(meal, priceFactor))}, ${mac.kcal} calories, ${mac.protein} grams protein`}
+              accessibilityHint={isOpen ? 'Hides details' : 'Shows ingredients and swaps'}
+              accessibilityState={{ expanded: isOpen }}
               className="rounded-[28px] border p-5"
               style={{ borderColor: ate ? 'rgba(226,35,45,0.35)' : C.line, backgroundColor: ate ? 'rgba(226,35,45,0.06)' : C.card }}>
               <View className="flex-row items-center" style={{ gap: 16 }}>
@@ -103,7 +107,7 @@ export default function Meals() {
                     {mac.kcal} kcal · {mac.protein}g protein
                   </Text>
                 </View>
-                <Tap onPress={() => toggleEaten(today, slot.key)} hitSlop={12}>
+                <Tap onPress={() => toggleEaten(today, slot.key)} hitSlop={12} accessibilityRole="checkbox" accessibilityState={{ checked: ate }} accessibilityLabel={`Mark ${slot.label.toLowerCase()} eaten`}>
                   <Check on={ate} size={32} />
                 </Tap>
               </View>
@@ -127,7 +131,7 @@ export default function Meals() {
                       .filter((a) => a.meal.id !== meal.id)
                       .slice(0, 4)
                       .map((a) => (
-                        <Tap key={a.meal.id} onPress={() => setMeal(today, slot.key, a.meal.id)} className="flex-row items-center rounded-[18px] border border-line px-4 py-3.5" style={{ gap: 12 }}>
+                        <Tap key={a.meal.id} onPress={() => setMeal(today, slot.key, a.meal.id)} accessibilityLabel={`Swap to ${a.meal.name}, ${peso(a.cost)}${a.fits ? '' : ', over budget'}`} className="flex-row items-center rounded-[18px] border border-line px-4 py-3.5" style={{ gap: 12 }}>
                           <Text className="flex-1 text-[15px] font-semibold text-ink">{a.meal.name}</Text>
                           <Text className="text-[14px] font-bold" style={{ color: a.fits ? C.sub : C.warn }}>
                             {peso(a.cost)}
@@ -152,7 +156,7 @@ export default function Meals() {
                 {f.kcal} kcal · {f.protein}g protein{f.cost ? ` · ${peso(f.cost)}` : ''}
               </Text>
             </View>
-            <IconButton icon="trash-outline" size={38} color={C.glow} onPress={() => removeCustomFood(today, f.id)} />
+            <IconButton icon="trash-outline" label={`Remove ${f.name}`} size={38} color={C.glow} onPress={() => removeCustomFood(today, f.id)} />
           </Card>
         </Animated.View>
       ))}

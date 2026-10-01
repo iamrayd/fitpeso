@@ -10,6 +10,7 @@ import { useToday } from '@/lib/hooks';
 import { useStore } from '@/lib/store';
 
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const KIND_ICON = { dumbbell: 'barbell-outline', bodyweight: 'body-outline', cardio: 'walk-outline', mobility: 'leaf-outline' } as const;
 const POSTURE_TIP = 'Your arched lower back pushes your belly forward. This 10-minute routine stretches tight hip flexors and wakes up your glutes and core. Do it every day.';
 
@@ -45,7 +46,14 @@ export default function Workout() {
         {DAY_LETTERS.map((l, i) => {
           const on = i === sel;
           return (
-            <Tap key={i} onPress={() => setSel(i)} className="items-center rounded-[18px] py-3" style={{ width: 44, gap: 8, backgroundColor: on ? C.accent : C.card }}>
+            <Tap
+              key={i}
+              onPress={() => setSel(i)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={`${DAY_NAMES[i]}, ${WEEK[i].title}, ${Math.round(weekProgress[i] * 100)}% done`}
+              className="items-center rounded-[18px] py-3"
+              style={{ width: 44, gap: 8, backgroundColor: on ? C.fill : C.card }}>
               <Text className="text-[14px] font-bold" style={{ color: on ? C.ink : i === todayIdx ? C.accent : C.sub }}>
                 {l}
               </Text>
@@ -65,7 +73,7 @@ export default function Workout() {
               <Text className="text-[24px] font-extrabold tracking-tight text-ink">{plan.title}</Text>
               <Text className="text-[14px] text-sub">{plan.focus}</Text>
             </View>
-            <Ring size={68} stroke={7} progress={finished / total}>
+            <Ring size={68} stroke={7} progress={finished / total} label={`${finished} of ${total} exercises done`}>
               <Text className="text-[15px] font-extrabold text-ink">
                 {finished}/{total}
               </Text>
@@ -91,7 +99,7 @@ export default function Workout() {
       <SectionTitle right={<Text className="text-[13px] font-semibold text-dim">{relativeDay(day, today)}</Text>}>100 push-ups</SectionTitle>
       <Card>
         <View className="items-center" style={{ gap: 20 }}>
-          <Ring size={168} stroke={15} progress={pushups / PUSHUP_GOAL}>
+          <Ring size={168} stroke={15} progress={pushups / PUSHUP_GOAL} label={`Push-ups: ${pushups} of ${PUSHUP_GOAL}`}>
             <Text className="text-[46px] font-extrabold text-ink">{pushups}</Text>
             <Text className="text-[13px] font-semibold text-sub">{pushups >= PUSHUP_GOAL ? 'Done!' : `${PUSHUP_GOAL - pushups} to go`}</Text>
           </Ring>
@@ -100,7 +108,7 @@ export default function Workout() {
               <Tap
                 key={n}
                 disabled={isFuture || (n < 0 && pushups === 0)}
-               
+                accessibilityLabel={n > 0 ? `Add ${n} push-ups` : `Remove ${-n} push-ups`}
                 onPress={() => addPushups(day, n)}
                 className="flex-1 items-center rounded-2xl py-4"
                 style={{ backgroundColor: n < 0 ? C.raised : 'rgba(226,35,45,0.14)' }}>
@@ -124,8 +132,10 @@ function ExerciseRow({ e, index, done, disabled, onToggle }: { e: Exercise; inde
   return (
     <Animated.View entering={FadeInDown.delay(index * 40).duration(300)} layout={LinearTransition.duration(220)}>
       <Tap
-       
         onPress={() => setOpen((o) => !o)}
+        accessibilityLabel={`${e.name}, ${e.sets > 1 ? `${e.sets} sets of ` : ''}${e.reps}`}
+        accessibilityHint={open ? 'Hides form tips' : 'Shows form tips'}
+        accessibilityState={{ expanded: open }}
         className="rounded-[24px] border px-4 py-4"
         style={{ borderColor: done ? 'rgba(226,35,45,0.35)' : C.line, backgroundColor: done ? 'rgba(226,35,45,0.06)' : C.card }}>
         <View className="flex-row items-center" style={{ gap: 14 }}>
@@ -139,7 +149,7 @@ function ExerciseRow({ e, index, done, disabled, onToggle }: { e: Exercise; inde
               {e.reps}
             </Text>
           </View>
-          <Tap disabled={disabled} onPress={onToggle} hitSlop={12}>
+          <Tap disabled={disabled} onPress={onToggle} hitSlop={12} accessibilityRole="checkbox" accessibilityState={{ checked: done, disabled }} accessibilityLabel={`Mark ${e.name} done`}>
             <Check on={done} />
           </Tap>
         </View>

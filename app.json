@@ -34,12 +34,19 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": true
     },
-    "backgroundColor": "#0A0A0A"
+    "backgroundColor": "#0A0A0A",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b884486a-d2de-4081-9753-3720e1df3d34"
+      }
+    }
   }
 }

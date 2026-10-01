@@ -5,6 +5,7 @@ import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 import { useShallow } from 'zustand/react/shallow';
 
+import { BackupCard } from '@/components/backup-card';
 import { ActivityPicker, BodyFields, SexPicker, formToProfile, profileToForm } from '@/components/profile-form';
 import { Button, C, Card, Field, Header, Label, Screen, SectionTitle, Segmented, Stat, Tap } from '@/components/ui';
 import { prettyDate } from '@/lib/date';
@@ -121,7 +122,7 @@ export default function Me() {
             <View className="flex-row" style={{ gap: 12 }}>
               <Stat label="Waist" value={`${profile.waistCm} cm`} />
               <Stat label="Waist/height" value={w.toFixed(2)} color={whtrCategory(w).color} sub={whtrCategory(w).label} />
-              <Stat label="Goal" value={`<${waistGoal} cm`} color={C.accent} sub={profile.waistCm! > waistGoal ? `${(profile.waistCm! - waistGoal).toFixed(1)} cm to go` : 'Reached'} />
+              <Stat label="Goal" value={`<${waistGoal} cm`} color={C.glow} sub={profile.waistCm! > waistGoal ? `${(profile.waistCm! - waistGoal).toFixed(1)} cm to go` : 'Reached'} />
             </View>
           ) : (
             <Text className="text-[15px] text-sub">Log your waist below to track it.</Text>
@@ -133,7 +134,7 @@ export default function Me() {
         <View style={{ gap: 16 }}>
           <Label right={<Text className="text-[12px] text-dim">maintenance {Math.round(tdee(profile))}</Text>}>Daily targets</Label>
           <View className="flex-row" style={{ gap: 12 }}>
-            <Stat label="Calories" value={`${t.kcal}`} color={C.accent} />
+            <Stat label="Calories" value={`${t.kcal}`} color={C.glow} />
             <Stat label="Protein" value={`${t.protein}g`} />
             <Stat label="Carbs" value={`${t.carbs}g`} />
             <Stat label="Fat" value={`${t.fat}g`} />
@@ -172,8 +173,8 @@ export default function Me() {
 
       <SectionTitle
         right={
-          <Tap hitSlop={10} onPress={() => { setForm(profileToForm(profile)); setFormError(''); setEditing((e) => !e); }}>
-            <Text className="text-[14px] font-bold text-accent">{editing ? 'Cancel' : 'Edit'}</Text>
+          <Tap hitSlop={12} accessibilityLabel={editing ? 'Cancel editing profile' : 'Edit profile'} onPress={() => { setForm(profileToForm(profile)); setFormError(''); setEditing((e) => !e); }}>
+            <Text className="text-[14px] font-bold text-glow">{editing ? 'Cancel' : 'Edit'}</Text>
           </Tap>
         }>
         Profile
@@ -250,6 +251,9 @@ export default function Me() {
           />
         </View>
       </Card>
+
+      <SectionTitle>Your data</SectionTitle>
+      <BackupCard />
 
       <Button
         variant="danger"

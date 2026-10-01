@@ -13,9 +13,10 @@ module.exports = {
         line: '#2A2A2A',
         ink: '#F5F5F5',
         sub: '#A3A3A3',
-        dim: '#6B6B6B',
+        dim: '#8A8A8A', // 5.6:1 on bg (WCAG AA)
         accent: '#E2232D',
-        glow: '#FF4D57',
+        glow: '#FF4D57', // red for small text: 6:1 on bg
+        fill: '#D91F28', // red behind white text (4.6:1)
         warn: '#F5A524',
       },
     },

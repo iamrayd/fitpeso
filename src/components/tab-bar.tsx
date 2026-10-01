@@ -77,7 +77,9 @@ export function TabBar({ state, descriptors, navigation, insets }: BottomTabBarP
               }}
               style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 9, gap: 4 }}>
               <Ionicons name={focused ? on : off} size={22} color={focused ? C.accent : C.dim} />
-              <Text style={{ fontSize: 11, fontWeight: '700', color: focused ? C.ink : C.dim }}>{options.title}</Text>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: focused ? C.ink : C.dim }} maxFontSizeMultiplier={1.2}>
+                {options.title}
+              </Text>
             </Pressable>
           );
         })}

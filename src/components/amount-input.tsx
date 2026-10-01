@@ -6,11 +6,11 @@ import { C, Tap } from './ui';
 const QUICK = [20, 50, 100, 200, 500];
 
 /** Big centered peso amount with quick-add chips. Keeps only digits and one decimal point. */
-export function AmountInput({ value, onChange, onSubmit, color = C.accent, quick = QUICK }: { value: string; onChange: (v: string) => void; onSubmit?: () => void; color?: string; quick?: number[] }) {
+export function AmountInput({ value, onChange, onSubmit, color = C.accent, quick = QUICK, autoFocus = true }: { value: string; onChange: (v: string) => void; onSubmit?: () => void; color?: string; quick?: number[]; autoFocus?: boolean }) {
   return (
     <View style={{ gap: 20 }}>
       <View className="w-full flex-row items-center justify-center py-4">
-        <Text className="text-[40px] font-extrabold" style={{ color }}>
+        <Text className="text-[40px] font-extrabold" style={{ color }} maxFontSizeMultiplier={1.2} importantForAccessibility="no">
           ₱
         </Text>
         <TextInput
@@ -19,7 +19,9 @@ export function AmountInput({ value, onChange, onSubmit, color = C.accent, quick
           placeholder="0"
           placeholderTextColor={C.dim}
           keyboardType="decimal-pad"
-          autoFocus
+          autoFocus={autoFocus}
+          accessibilityLabel="Amount in pesos"
+          maxFontSizeMultiplier={1.2}
           selectionColor={C.accent}
           cursorColor={C.accent}
           className="text-[56px] font-extrabold text-ink"
@@ -31,7 +33,7 @@ export function AmountInput({ value, onChange, onSubmit, color = C.accent, quick
       </View>
       <View className="flex-row flex-wrap justify-center" style={{ gap: 8 }}>
         {quick.map((q) => (
-          <Tap key={q} onPress={() => onChange(String((parseNum(value) || 0) + q))} className="rounded-full bg-raised px-3.5 py-2.5">
+          <Tap key={q} onPress={() => onChange(String((parseNum(value) || 0) + q))} accessibilityLabel={`Add ${q} pesos`} className="rounded-full bg-raised px-3.5 py-2.5">
             <Text className="text-[13px] font-bold text-ink">+{peso(q)}</Text>
           </Tap>
         ))}

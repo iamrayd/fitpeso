@@ -80,7 +80,7 @@ export default function Onboarding() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={{ paddingTop: insets.top + 16, paddingHorizontal: GUTTER, gap: 28 }}>
         <View className="flex-row items-center" style={{ gap: 14 }}>
-          {step > 0 ? <IconButton icon="chevron-back" onPress={back} /> : <View style={{ width: 44, height: 44 }} />}
+          {step > 0 ? <IconButton icon="chevron-back" label="Back" onPress={back} /> : <View style={{ width: 44, height: 44 }} />}
           <View className="flex-1 flex-row" style={{ gap: 6 }}>
             {STEPS.map((_, i) => (
               <View key={i} className="h-1.5 flex-1 rounded-full" style={{ backgroundColor: i <= step ? C.accent : C.raised }} />

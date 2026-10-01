@@ -4,7 +4,9 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { MEALS_BY_ID, mealCost, type Slot } from '@/data/foods';
+import { migrateData, SCHEMA } from './backup-validate';
 import type { Activity, Macros } from './fitness';
+import { defaultAccounts, type AccountIcon, type Category } from './money-meta';
 
 export type Profile = {
   name: string;
@@ -28,19 +30,7 @@ export type DayMeals = {
 
 export type DayWorkout = { done: string[]; pushups: number };
 
-export const CATEGORIES = {
-  food: { label: 'Food', icon: 'fast-food-outline' },
-  groceries: { label: 'Groceries', icon: 'basket-outline' },
-  transport: { label: 'Transport', icon: 'bus-outline' },
-  bills: { label: 'Bills', icon: 'flash-outline' },
-  load: { label: 'Load/Data', icon: 'phone-portrait-outline' },
-  health: { label: 'Health', icon: 'medkit-outline' },
-  shopping: { label: 'Shopping', icon: 'bag-handle-outline' },
-  fun: { label: 'Leisure', icon: 'game-controller-outline' },
-  family: { label: 'Family', icon: 'heart-outline' },
-  other: { label: 'Other', icon: 'ellipsis-horizontal' },
-} as const;
-export type Category = keyof typeof CATEGORIES;
+export { ACCOUNT_ICONS, CATEGORIES, type AccountIcon, type Category } from './money-meta';
 
 export type Expense = {
   id: string;
@@ -55,9 +45,6 @@ export type Expense = {
   accountId?: string;
 };
 
-export const ACCOUNT_ICONS = ['cash-outline', 'phone-portrait-outline', 'business-outline', 'card-outline', 'wallet-outline', 'save-outline'] as const;
-export type AccountIcon = (typeof ACCOUNT_ICONS)[number];
-
 /**
  * A wallet (Cash, GCash, Bank, …). Its balance is never stored directly: it is
  * `base` + money in − expenses, so deleting or editing an entry can never make
@@ -68,6 +55,9 @@ export type Account = { id: string; name: string; icon: AccountIcon; base: numbe
 export type Income = { id: string; day: string; ts: number; amount: number; accountId: string; note: string };
 
 export type PaySchedule = 'monthly' | 'kinsenas';
+
+/** Everything that gets saved (and backed up). */
+export type AppData = State;
 
 type State = {
   profile: Profile | null;
@@ -106,6 +96,10 @@ type Actions = {
   setDailyBudget: (day: string, amount: number) => void;
   addExpense: (e: Omit<Expense, 'id' | 'ts'> & { ts?: number }) => void;
   removeExpense: (id: string) => void;
+  updateExpense: (id: string, patch: Partial<Pick<Expense, 'amount' | 'category' | 'note' | 'accountId'>>) => void;
+  updateIncome: (id: string, patch: Partial<Pick<Income, 'amount' | 'note' | 'accountId'>>) => void;
+  /** Replaces everything with validated backup data. */
+  importData: (data: AppData) => void;
 
   addIncome: (i: Omit<Income, 'id' | 'ts'> & { ts?: number }) => void;
   removeIncome: (id: string) => void;
@@ -116,7 +110,7 @@ type Actions = {
   resetAll: () => void;
 };
 
-const initial: State = {
+export const initial: State = {
   profile: null,
   body: [],
   workouts: {},
@@ -134,13 +128,7 @@ const initial: State = {
   lastAccountId: null,
 };
 
-function defaultAccounts(): Account[] {
-  return [
-    { id: 'cash', name: 'Cash', icon: 'cash-outline', base: 0 },
-    { id: 'gcash', name: 'GCash', icon: 'phone-portrait-outline', base: 0 },
-    { id: 'bank', name: 'Bank', icon: 'business-outline', base: 0 },
-  ];
-}
+
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
@@ -248,6 +236,12 @@ export const useStore = create<State & Actions>()(
 
       removeExpense: (id) => set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) })),
 
+      updateExpense: (id, patch) => set((s) => ({ expenses: s.expenses.map((e) => (e.id === id ? { ...e, ...patch } : e)) })),
+
+      updateIncome: (id, patch) => set((s) => ({ incomes: s.incomes.map((i) => (i.id === id ? { ...i, ...patch } : i)) })),
+
+      importData: (data) => set({ ...data }),
+
       addIncome: (i) =>
         set((s) => ({ incomes: [...s.incomes, { ...i, id: uid(), ts: i.ts ?? Date.now() }], lastAccountId: i.accountId })),
 
@@ -278,14 +272,10 @@ export const useStore = create<State & Actions>()(
     }),
     {
       name: 'fitpeso-v1',
-      version: 2,
+      version: SCHEMA,
       storage: createJSONStorage(() => AsyncStorage),
       // v1 → v2 added wallets. Older expenses keep no wallet so balances start clean.
-      migrate: (persisted, version) => {
-        const old = (persisted ?? {}) as Partial<State>;
-        if (version < 2) return { ...old, accounts: defaultAccounts(), incomes: [], lastAccountId: null } as State;
-        return old as State;
-      },
+      migrate: (persisted, version) => migrateData(persisted, version) as State,
       // Only data is saved; actions are recreated on every launch.
       partialize: (s) =>
         Object.fromEntries(Object.entries(s).filter(([, v]) => typeof v !== 'function')) as State,

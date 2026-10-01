@@ -45,7 +45,7 @@ export default function AddFood() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 20 : insets.top + 12, paddingHorizontal: GUTTER, paddingBottom: insets.bottom + 32, gap: 22 }}>
         <View className="flex-row items-center justify-between">
-          <IconButton icon="close" onPress={() => closeTo('/meals')} />
+          <IconButton icon="close" label="Close" onPress={() => closeTo('/meals')} />
           <Text className="text-[16px] font-bold text-ink">Add food</Text>
           <View style={{ width: 44 }} />
         </View>
@@ -55,7 +55,6 @@ export default function AddFood() {
           {PRESETS.map((p) => (
             <Tap
               key={p.name}
-             
               onPress={() => setF({ name: p.name, kcal: String(p.kcal), protein: String(p.protein), carbs: String(p.carbs), fat: String(p.fat), cost: String(p.cost) })}
               className="rounded-[18px] border px-4 py-3"
               style={{ borderColor: f.name === p.name ? C.accent : C.line, backgroundColor: f.name === p.name ? 'rgba(226,35,45,0.12)' : C.card }}>

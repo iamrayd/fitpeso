@@ -54,7 +54,7 @@ export default function AccountScreen() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 20 : insets.top + 12, paddingHorizontal: GUTTER, paddingBottom: insets.bottom + 32, gap: 24 }}>
         <View className="flex-row items-center justify-between">
-          <IconButton icon="close" onPress={() => closeTo('/wallet')} />
+          <IconButton icon="close" label="Close" onPress={() => closeTo('/wallet')} />
           <Text className="text-[16px] font-bold text-ink">{editing ? 'Edit wallet' : 'New wallet'}</Text>
           <View style={{ width: 44 }} />
         </View>

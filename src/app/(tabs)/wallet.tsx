@@ -87,7 +87,7 @@ export default function Wallet() {
             <Tap
               onPress={() => router.push('/account')}
               accessibilityLabel="Add wallet"
-              className="w-[120px] items-center justify-center rounded-[22px] border-2 border-dashed border-line px-4 py-4"
+              className="min-w-[120px] items-center justify-center rounded-[22px] border-2 border-dashed border-line px-4 py-4"
               style={{ gap: 8 }}>
               <Ionicons name="add" size={24} color={C.accent} />
               <Text className="text-[13px] font-bold text-sub">Add wallet</Text>
@@ -104,17 +104,19 @@ export default function Wallet() {
       <View className="mt-3 flex-row items-center justify-between">
         <Text className="text-[18px] font-extrabold text-ink">Daily budget</Text>
         <View className="flex-row items-center" style={{ gap: 6 }}>
-          <IconButton icon="chevron-back" size={36} onPress={() => setDay(addDays(day, -1))} />
-          <Tap onPress={() => setDay(today)}>
-            <Text className="min-w-[78px] text-center text-[14px] font-bold text-ink">{relativeDay(day, today)}</Text>
+          <IconButton icon="chevron-back" label="Previous day" size={36} onPress={() => setDay(addDays(day, -1))} />
+          <Tap onPress={() => setDay(today)} accessibilityLabel={`Showing ${relativeDay(day, today)}. Tap to jump to today`}>
+            <Text className="min-w-[78px] text-center text-[14px] font-bold text-ink" maxFontSizeMultiplier={1.3}>
+              {relativeDay(day, today)}
+            </Text>
           </Tap>
-          <IconButton icon="chevron-forward" size={36} disabled={day >= today} onPress={() => setDay(addDays(day, 1))} />
+          <IconButton icon="chevron-forward" label="Next day" size={36} disabled={day >= today} onPress={() => setDay(addDays(day, 1))} />
         </View>
       </View>
 
       <Card>
         <View className="flex-row items-center" style={{ gap: 22 }}>
-          <Ring size={120} stroke={13} progress={budget ? spent / budget : 0} color={left < 0 ? C.warn : C.accent}>
+          <Ring size={120} stroke={13} progress={budget ? spent / budget : 0} color={left < 0 ? C.warn : C.accent} label={`Spent ${peso(spent)} of ${peso(budget)} daily budget`}>
             <Text className="text-[12px] font-semibold text-sub">spent</Text>
             <Text className="text-[19px] font-extrabold text-ink">{peso(spent)}</Text>
           </Ring>
@@ -185,10 +187,18 @@ export default function Wallet() {
             const over = w.total > budgetFor({ dailyBudgets, defaultDailyBudget }, w.day);
             const isSel = w.day === day;
             return (
-              <Tap key={w.day} onPress={() => setDay(w.day)} className="flex-1 items-center" style={{ gap: 8 }}>
-                <Text className="text-[10px] font-semibold text-dim">{w.total ? (w.total >= 1000 ? `${(w.total / 1000).toFixed(1)}k` : Math.round(w.total)) : ''}</Text>
+              <Tap
+                key={w.day}
+                onPress={() => setDay(w.day)}
+                accessibilityLabel={`${relativeDay(w.day, today)}, spent ${peso(w.total)}${over ? ', over budget' : ''}`}
+                accessibilityState={{ selected: isSel }}
+                className="flex-1 items-center"
+                style={{ gap: 8 }}>
+                <Text className="text-[10px] font-semibold" style={{ color: over ? C.warn : C.dim }} maxFontSizeMultiplier={1.2}>
+                  {w.total ? `${over ? '! ' : ''}${w.total >= 1000 ? `${(w.total / 1000).toFixed(1)}k` : Math.round(w.total)}` : ''}
+                </Text>
                 <View style={{ height: Math.max(4, (w.total / weekMax) * 84), width: '100%', borderRadius: 8, backgroundColor: over ? C.warn : isSel ? C.accent : 'rgba(226,35,45,0.35)' }} />
-                <Text className="text-[12px] font-bold" style={{ color: isSel ? C.ink : C.dim }}>
+                <Text className="text-[12px] font-bold" style={{ color: isSel ? C.ink : C.dim }} maxFontSizeMultiplier={1.2}>
                   {SHORT_DAYS[fromKey(w.day).getDay()]}
                 </Text>
               </Tap>
@@ -229,7 +239,12 @@ export default function Wallet() {
 
 function AccountTile({ a, balance }: { a: Account; balance: number }) {
   return (
-    <Tap onPress={() => router.push({ pathname: '/account', params: { id: a.id } })} className="w-[140px] rounded-[22px] bg-raised px-4 py-4" style={{ gap: 10 }}>
+    <Tap
+      onPress={() => router.push({ pathname: '/account', params: { id: a.id } })}
+      accessibilityLabel={`${a.name} wallet, ${peso(balance)}`}
+      accessibilityHint="Opens to edit this wallet"
+      className="min-w-[140px] rounded-[22px] bg-raised px-4 py-4"
+      style={{ gap: 10 }}>
       <View className="h-9 w-9 items-center justify-center rounded-xl bg-bg">
         <Ionicons name={a.icon} size={18} color={C.accent} />
       </View>
@@ -246,11 +261,15 @@ function AccountTile({ a, balance }: { a: Account; balance: number }) {
 }
 
 function IncomeRow({ i, wallet }: { i: Income; wallet?: string }) {
-  const [open, setOpen] = useState(false);
-  const remove = useStore((s) => s.removeIncome);
+  const amount = peso(i.amount, i.amount % 1 !== 0);
   return (
     <Animated.View entering={FadeInDown.duration(260)} exiting={FadeOut.duration(180)} layout={LinearTransition.duration(220)}>
-      <Tap onPress={() => setOpen((o) => !o)} className="flex-row items-center rounded-[24px] border border-line bg-card px-4 py-4" style={{ gap: 14 }}>
+      <Tap
+        onPress={() => router.push({ pathname: '/add-money', params: { id: i.id } })}
+        accessibilityLabel={`Money in, ${i.note || 'no note'}, plus ${amount}, ${wallet ?? 'deleted wallet'}, ${timeLabel(i.ts)}`}
+        accessibilityHint="Opens to edit or delete"
+        className="flex-row items-center rounded-[24px] border border-line bg-card px-4 py-4"
+        style={{ gap: 14 }}>
         <View className="h-12 w-12 items-center justify-center rounded-2xl bg-raised">
           <Ionicons name="arrow-down" size={21} color={C.ink} />
         </View>
@@ -262,25 +281,23 @@ function IncomeRow({ i, wallet }: { i: Income; wallet?: string }) {
             {wallet ?? 'Deleted wallet'} · {timeLabel(i.ts)}
           </Text>
         </View>
-        {open ? (
-          <Animated.View entering={FadeIn.duration(150)}>
-            <Button small variant="danger" icon="trash-outline" label="Delete" onPress={() => remove(i.id)} />
-          </Animated.View>
-        ) : (
-          <Text className="text-[17px] font-extrabold text-ink">+{peso(i.amount, i.amount % 1 !== 0)}</Text>
-        )}
+        <Text className="text-[17px] font-extrabold text-ink">+{amount}</Text>
       </Tap>
     </Animated.View>
   );
 }
 
 function ExpenseRow({ e, wallet }: { e: Expense; wallet?: string }) {
-  const [open, setOpen] = useState(false);
-  const remove = useStore((s) => s.removeExpense);
   const meta = CATEGORIES[e.category] ?? CATEGORIES.other;
+  const amount = peso(e.amount, e.amount % 1 !== 0);
   return (
     <Animated.View entering={FadeInDown.duration(260)} exiting={FadeOut.duration(180)} layout={LinearTransition.duration(220)}>
-      <Tap onPress={() => setOpen((o) => !o)} className="flex-row items-center rounded-[24px] border border-line bg-card px-4 py-4" style={{ gap: 14 }}>
+      <Tap
+        onPress={() => router.push({ pathname: '/add-expense', params: { id: e.id } })}
+        accessibilityLabel={`${e.note ? `${e.note}, ` : ""}${meta.label}, minus ${amount}${wallet ? `, ${wallet}` : ''}, ${timeLabel(e.ts)}`}
+        accessibilityHint="Opens to edit or delete"
+        className="flex-row items-center rounded-[24px] border border-line bg-card px-4 py-4"
+        style={{ gap: 14 }}>
         <View className="h-12 w-12 items-center justify-center rounded-2xl bg-raised">
           <Ionicons name={meta.icon} size={21} color={C.accent} />
         </View>
@@ -293,13 +310,7 @@ function ExpenseRow({ e, wallet }: { e: Expense; wallet?: string }) {
             {meta.label} · {timeLabel(e.ts)}
           </Text>
         </View>
-        {open ? (
-          <Animated.View entering={FadeIn.duration(150)}>
-            <Button small variant="danger" icon="trash-outline" label="Delete" onPress={() => remove(e.id)} />
-          </Animated.View>
-        ) : (
-          <Text className="text-[17px] font-extrabold text-ink">-{peso(e.amount, e.amount % 1 !== 0)}</Text>
-        )}
+        <Text className="text-[17px] font-extrabold text-ink">-{amount}</Text>
       </Tap>
     </Animated.View>
   );

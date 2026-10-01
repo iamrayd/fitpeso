@@ -62,10 +62,15 @@ src/
 
 Prices in `src/data/foods.ts` are estimates for Cebu City markets in late 2026. To scale them all quickly, use **Me → Settings → Market prices** (−10% to +25%), or edit the `cost` of any ingredient in that file.
 
+## Backup
+
+**Me → Your data → Back up** saves everything to a `.json` file you can keep in Google Drive or anywhere else. **Restore** checks the file first, shows what it contains, and only replaces your data after you confirm.
+
 ## Checks
 
 ```bash
 npx tsc --noEmit   # types
 npx expo lint      # lint (includes React Compiler rules)
 npx expo-doctor    # dependency health
+npm test           # unit tests: backup validation, wallet, planner, dates, BMI/calories
 ```

@@ -1,5 +1,6 @@
 import { addDays, daysInMonth, fromKey } from './date';
-import { CATEGORIES, type Category, type Expense, type PaySchedule } from './store';
+import { CATEGORIES, type Category } from './money-meta';
+import type { Expense, PaySchedule } from './store';
 
 export type Period = { start: string; end: string; days: number; income: number; label: string };
 
