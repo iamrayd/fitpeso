@@ -1,14 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import { Bar, Button, C, Card, Field, Header, IconButton, Ring, Screen, SectionTitle, Stat, Tap } from '@/components/ui';
 import { addDays, fromKey, relativeDay, timeLabel } from '@/lib/date';
 import { parseNum, peso } from '@/lib/format';
 import { useToday } from '@/lib/hooks';
-import { CATEGORIES, budgetFor, useStore, type Expense } from '@/lib/store';
+import { CATEGORIES, balanceOf, budgetFor, useStore, type Account, type Expense, type Income } from '@/lib/store';
 import { byCategory, inRange, last7, payPeriod, totalOf } from '@/lib/wallet';
 
 const SHORT_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -23,6 +23,8 @@ export default function Wallet() {
     setDay(today);
   }
   const expenses = useStore((s) => s.expenses);
+  const incomes = useStore((s) => s.incomes);
+  const accounts = useStore((s) => s.accounts);
   const dailyBudgets = useStore((s) => s.dailyBudgets);
   const defaultDailyBudget = useStore((s) => s.defaultDailyBudget);
   const budget = budgetFor({ dailyBudgets, defaultDailyBudget }, day);
@@ -33,8 +35,19 @@ export default function Wallet() {
   const [draft, setDraft] = useState('');
   const [salaryDraft, setSalaryDraft] = useState('');
 
-  const dayList = useMemo(() => expenses.filter((e) => e.day === day).sort((a, b) => b.ts - a.ts), [expenses, day]);
+  const dayList = useMemo(() => expenses.filter((e) => e.day === day), [expenses, day]);
   const spent = totalOf(dayList);
+  // Everything that happened on the day, money in and out, newest first.
+  const activity = useMemo(
+    () =>
+      [...dayList.map((e) => ({ kind: 'out' as const, e })), ...incomes.filter((i) => i.day === day).map((i) => ({ kind: 'in' as const, i }))].sort(
+        (a, b) => (b.kind === 'out' ? b.e.ts : b.i.ts) - (a.kind === 'out' ? a.e.ts : a.i.ts),
+      ),
+    [dayList, incomes, day],
+  );
+  const balances = accounts.map((a) => ({ a, bal: balanceOf(a, incomes, expenses) }));
+  const total = balances.reduce((n, x) => n + x.bal, 0);
+  const accountName = (id?: string) => accounts.find((a) => a.id === id)?.name;
   const left = budget - spent;
 
   const period = payPeriod(today, schedule, salary);
@@ -57,19 +70,47 @@ export default function Wallet() {
 
   return (
     <Screen>
-      <Header
-        eyebrow="Expenses"
-        title="Wallet"
-        right={
-          <View className="flex-row items-center" style={{ gap: 6 }}>
-            <IconButton icon="chevron-back" size={38} onPress={() => setDay(addDays(day, -1))} />
-            <Tap onPress={() => setDay(today)}>
-              <Text className="min-w-[82px] text-center text-[14px] font-bold text-ink">{relativeDay(day, today)}</Text>
-            </Tap>
-            <IconButton icon="chevron-forward" size={38} disabled={day >= today} onPress={() => setDay(addDays(day, 1))} />
+      <Header eyebrow="Money" title="Wallet" />
+
+      <Card>
+        <View style={{ gap: 18 }}>
+          <View style={{ gap: 4 }}>
+            <Text className="text-[13px] font-semibold text-sub">Total balance</Text>
+            <Text className={`text-[40px] font-extrabold tracking-tight ${total < 0 ? 'text-warn' : 'text-ink'}`} numberOfLines={1} adjustsFontSizeToFit>
+              {peso(total, total % 1 !== 0)}
+            </Text>
           </View>
-        }
-      />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }}>
+            {balances.map(({ a, bal }) => (
+              <AccountTile key={a.id} a={a} balance={bal} />
+            ))}
+            <Tap
+              onPress={() => router.push('/account')}
+              accessibilityLabel="Add wallet"
+              className="w-[120px] items-center justify-center rounded-[22px] border-2 border-dashed border-line px-4 py-4"
+              style={{ gap: 8 }}>
+              <Ionicons name="add" size={24} color={C.accent} />
+              <Text className="text-[13px] font-bold text-sub">Add wallet</Text>
+            </Tap>
+          </ScrollView>
+        </View>
+      </Card>
+
+      <View className="flex-row" style={{ gap: 12 }}>
+        <Button flex label="Expense" icon="remove" onPress={() => router.push({ pathname: '/add-expense', params: { day } })} />
+        <Button flex variant="ghost" label="Add money" icon="add" onPress={() => router.push('/add-money')} />
+      </View>
+
+      <View className="mt-3 flex-row items-center justify-between">
+        <Text className="text-[18px] font-extrabold text-ink">Daily budget</Text>
+        <View className="flex-row items-center" style={{ gap: 6 }}>
+          <IconButton icon="chevron-back" size={36} onPress={() => setDay(addDays(day, -1))} />
+          <Tap onPress={() => setDay(today)}>
+            <Text className="min-w-[78px] text-center text-[14px] font-bold text-ink">{relativeDay(day, today)}</Text>
+          </Tap>
+          <IconButton icon="chevron-forward" size={36} disabled={day >= today} onPress={() => setDay(addDays(day, 1))} />
+        </View>
+      </View>
 
       <Card>
         <View className="flex-row items-center" style={{ gap: 22 }}>
@@ -98,18 +139,14 @@ export default function Wallet() {
         ) : null}
       </Card>
 
-      <Button label="Add expense" icon="add" onPress={() => router.push({ pathname: '/add-expense', params: { day } })} />
-
-      {dayList.length === 0 ? (
+      {activity.length === 0 ? (
         <View className="items-center py-6" style={{ gap: 10 }}>
           <Ionicons name="receipt-outline" size={30} color={C.dim} />
           <Text className="text-[14px] text-dim">Nothing logged yet</Text>
         </View>
       ) : (
         <View style={{ gap: 10 }}>
-          {dayList.map((e) => (
-            <ExpenseRow key={e.id} e={e} />
-          ))}
+          {activity.map((x) => (x.kind === 'out' ? <ExpenseRow key={x.e.id} e={x.e} wallet={accountName(x.e.accountId)} /> : <IncomeRow key={x.i.id} i={x.i} wallet={accountName(x.i.accountId)} />))}
         </View>
       )}
 
@@ -190,7 +227,54 @@ export default function Wallet() {
   );
 }
 
-function ExpenseRow({ e }: { e: Expense }) {
+function AccountTile({ a, balance }: { a: Account; balance: number }) {
+  return (
+    <Tap onPress={() => router.push({ pathname: '/account', params: { id: a.id } })} className="w-[140px] rounded-[22px] bg-raised px-4 py-4" style={{ gap: 10 }}>
+      <View className="h-9 w-9 items-center justify-center rounded-xl bg-bg">
+        <Ionicons name={a.icon} size={18} color={C.accent} />
+      </View>
+      <View style={{ gap: 2 }}>
+        <Text className="text-[13px] font-semibold text-sub" numberOfLines={1}>
+          {a.name}
+        </Text>
+        <Text className={`text-[18px] font-extrabold ${balance < 0 ? 'text-warn' : 'text-ink'}`} numberOfLines={1} adjustsFontSizeToFit>
+          {peso(balance)}
+        </Text>
+      </View>
+    </Tap>
+  );
+}
+
+function IncomeRow({ i, wallet }: { i: Income; wallet?: string }) {
+  const [open, setOpen] = useState(false);
+  const remove = useStore((s) => s.removeIncome);
+  return (
+    <Animated.View entering={FadeInDown.duration(260)} exiting={FadeOut.duration(180)} layout={LinearTransition.duration(220)}>
+      <Tap onPress={() => setOpen((o) => !o)} className="flex-row items-center rounded-[24px] border border-line bg-card px-4 py-4" style={{ gap: 14 }}>
+        <View className="h-12 w-12 items-center justify-center rounded-2xl bg-raised">
+          <Ionicons name="arrow-down" size={21} color={C.ink} />
+        </View>
+        <View className="flex-1" style={{ gap: 2 }}>
+          <Text className="text-[16px] font-bold text-ink" numberOfLines={1}>
+            {i.note || 'Money in'}
+          </Text>
+          <Text className="text-[13px] text-sub">
+            {wallet ?? 'Deleted wallet'} · {timeLabel(i.ts)}
+          </Text>
+        </View>
+        {open ? (
+          <Animated.View entering={FadeIn.duration(150)}>
+            <Button small variant="danger" icon="trash-outline" label="Delete" onPress={() => remove(i.id)} />
+          </Animated.View>
+        ) : (
+          <Text className="text-[17px] font-extrabold text-ink">+{peso(i.amount, i.amount % 1 !== 0)}</Text>
+        )}
+      </Tap>
+    </Animated.View>
+  );
+}
+
+function ExpenseRow({ e, wallet }: { e: Expense; wallet?: string }) {
   const [open, setOpen] = useState(false);
   const remove = useStore((s) => s.removeExpense);
   const meta = CATEGORIES[e.category] ?? CATEGORIES.other;
@@ -205,6 +289,7 @@ function ExpenseRow({ e }: { e: Expense }) {
             {e.note || meta.label}
           </Text>
           <Text className="text-[13px] text-sub">
+            {wallet ? `${wallet} · ` : ''}
             {meta.label} · {timeLabel(e.ts)}
           </Text>
         </View>

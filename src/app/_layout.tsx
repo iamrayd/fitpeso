@@ -35,6 +35,8 @@ export default function RootLayout() {
           <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
           <Stack.Screen name="add-expense" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           <Stack.Screen name="add-food" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="add-money" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="account" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         </Stack>
       </ThemeProvider>
     </GestureHandlerRootView>

@@ -51,7 +51,21 @@ export type Expense = {
   note: string;
   /** Set when the expense was auto-created by eating a planned meal. */
   mealSlot?: Slot;
+  /** Wallet the money came out of. Expenses logged before wallets existed have none. */
+  accountId?: string;
 };
+
+export const ACCOUNT_ICONS = ['cash-outline', 'phone-portrait-outline', 'business-outline', 'card-outline', 'wallet-outline', 'save-outline'] as const;
+export type AccountIcon = (typeof ACCOUNT_ICONS)[number];
+
+/**
+ * A wallet (Cash, GCash, Bank, …). Its balance is never stored directly: it is
+ * `base` + money in − expenses, so deleting or editing an entry can never make
+ * the balance drift. Setting a balance by hand just moves `base`.
+ */
+export type Account = { id: string; name: string; icon: AccountIcon; base: number };
+
+export type Income = { id: string; day: string; ts: number; amount: number; accountId: string; note: string };
 
 export type PaySchedule = 'monthly' | 'kinsenas';
 
@@ -68,6 +82,10 @@ type State = {
   defaultDailyBudget: number;
   dailyBudgets: Record<string, number>;
   expenses: Expense[];
+  accounts: Account[];
+  incomes: Income[];
+  /** Wallet picked last time, used as the default for the next entry. */
+  lastAccountId: string | null;
 };
 
 type Actions = {
@@ -89,6 +107,12 @@ type Actions = {
   addExpense: (e: Omit<Expense, 'id' | 'ts'> & { ts?: number }) => void;
   removeExpense: (id: string) => void;
 
+  addIncome: (i: Omit<Income, 'id' | 'ts'> & { ts?: number }) => void;
+  removeIncome: (id: string) => void;
+  addAccount: (a: { name: string; icon: AccountIcon; balance: number }) => void;
+  updateAccount: (id: string, patch: { name?: string; icon?: AccountIcon; balance?: number }) => void;
+  removeAccount: (id: string) => void;
+
   resetAll: () => void;
 };
 
@@ -105,7 +129,18 @@ const initial: State = {
   defaultDailyBudget: 350,
   dailyBudgets: {},
   expenses: [],
+  accounts: defaultAccounts(),
+  incomes: [],
+  lastAccountId: null,
 };
+
+function defaultAccounts(): Account[] {
+  return [
+    { id: 'cash', name: 'Cash', icon: 'cash-outline', base: 0 },
+    { id: 'gcash', name: 'GCash', icon: 'phone-portrait-outline', base: 0 },
+    { id: 'bank', name: 'Bank', icon: 'business-outline', base: 0 },
+  ];
+}
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
@@ -113,7 +148,7 @@ const EMPTY_WORKOUT: DayWorkout = { done: [], pushups: 0 };
 
 export const useStore = create<State & Actions>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       ...initial,
 
       saveProfile: (p, today) =>
@@ -178,7 +213,7 @@ export const useStore = create<State & Actions>()(
           if (eating && s.autoLogMeals && meal) {
             expenses = [
               ...expenses,
-              { id: uid(), day, ts: Date.now(), amount: mealCost(meal, s.priceFactor), category: 'food', note: meal.name, mealSlot: slot },
+              { id: uid(), day, ts: Date.now(), amount: mealCost(meal, s.priceFactor), category: 'food', note: meal.name, mealSlot: slot, accountId: defaultAccountId(s) },
             ];
           }
           return { meals: { ...s.meals, [day]: { ...m, eaten } }, expenses };
@@ -203,16 +238,54 @@ export const useStore = create<State & Actions>()(
       setDailyBudget: (day, amount) => set((s) => ({ dailyBudgets: { ...s.dailyBudgets, [day]: amount } })),
 
       addExpense: (e) =>
-        set((s) => ({ expenses: [...s.expenses, { ...e, id: uid(), ts: e.ts ?? Date.now() }] })),
+        set((s) => {
+          const accountId = e.accountId ?? defaultAccountId(s);
+          return {
+            expenses: [...s.expenses, { ...e, accountId, id: uid(), ts: e.ts ?? Date.now() }],
+            lastAccountId: accountId ?? s.lastAccountId,
+          };
+        }),
 
       removeExpense: (id) => set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) })),
 
-      resetAll: () => set({ ...initial }),
+      addIncome: (i) =>
+        set((s) => ({ incomes: [...s.incomes, { ...i, id: uid(), ts: i.ts ?? Date.now() }], lastAccountId: i.accountId })),
+
+      removeIncome: (id) => set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) })),
+
+      addAccount: ({ name, icon, balance }) =>
+        set((s) => {
+          const id = uid();
+          return { accounts: [...s.accounts, { id, name, icon, base: balance }], lastAccountId: id };
+        }),
+
+      updateAccount: (id, patch) =>
+        set((s) => ({
+          accounts: s.accounts.map((a) => {
+            if (a.id !== id) return a;
+            const next = { ...a, ...(patch.name !== undefined ? { name: patch.name } : {}), ...(patch.icon ? { icon: patch.icon } : {}) };
+            // Move the base so the computed balance lands exactly on what was typed.
+            if (patch.balance !== undefined) next.base = patch.balance - movement(a.id, s.incomes, s.expenses);
+            return next;
+          }),
+        })),
+
+      // Entries stay in your spending history; they just stop counting toward any balance.
+      removeAccount: (id) =>
+        set((s) => (s.accounts.length <= 1 ? {} : { accounts: s.accounts.filter((a) => a.id !== id), lastAccountId: s.lastAccountId === id ? null : s.lastAccountId })),
+
+      resetAll: () => set({ ...initial, accounts: defaultAccounts() }),
     }),
     {
       name: 'fitpeso-v1',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => AsyncStorage),
+      // v1 → v2 added wallets. Older expenses keep no wallet so balances start clean.
+      migrate: (persisted, version) => {
+        const old = (persisted ?? {}) as Partial<State>;
+        if (version < 2) return { ...old, accounts: defaultAccounts(), incomes: [], lastAccountId: null } as State;
+        return old as State;
+      },
       // Only data is saved; actions are recreated on every launch.
       partialize: (s) =>
         Object.fromEntries(Object.entries(s).filter(([, v]) => typeof v !== 'function')) as State,
@@ -222,6 +295,23 @@ export const useStore = create<State & Actions>()(
 
 function upsertBody(list: BodyLog[], entry: BodyLog): BodyLog[] {
   return [...list.filter((b) => b.day !== entry.day), entry].sort((a, b) => a.day.localeCompare(b.day));
+}
+
+/** Money in minus money out for one wallet, excluding its base. */
+function movement(accountId: string, incomes: Income[], expenses: Expense[]): number {
+  let n = 0;
+  for (const i of incomes) if (i.accountId === accountId) n += i.amount;
+  for (const e of expenses) if (e.accountId === accountId) n -= e.amount;
+  return n;
+}
+
+export function balanceOf(a: Account, incomes: Income[], expenses: Expense[]): number {
+  return Math.round((a.base + movement(a.id, incomes, expenses)) * 100) / 100;
+}
+
+/** The wallet to use when none is picked: the last one used, else the first. */
+export function defaultAccountId(s: Pick<State, 'accounts' | 'lastAccountId'>): string | undefined {
+  return s.accounts.find((a) => a.id === s.lastAccountId)?.id ?? s.accounts[0]?.id;
 }
 
 /** The budget for a day: an override if you set one, otherwise your default. */

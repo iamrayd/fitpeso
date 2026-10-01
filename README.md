@@ -5,7 +5,7 @@ A personal fitness and wallet tracker built for one goal: **lose the belly fat o
 - **Today**: calories and macros eaten vs target, 100 push-up counter, money left today, next meal, BMI and waist-to-height.
 - **Train**: a 7-day plan for 2 dumbbells plus bodyweight, a daily 10-minute posture routine for anterior pelvic tilt, and the 100 push-ups tracker.
 - **Meals**: a breakfast, lunch, snack and dinner plan each day that fits your food budget (default ₱200) and hits your protein target, with Cebu market prices for every ingredient. Swap any meal, re-plan the day, or log food you ate outside the plan.
-- **Wallet**: daily budget, quick expense logging by category, a pay-period view (kinsenas or monthly) that tells you how much you can safely spend per day until payday, a 7-day chart, and a category breakdown.
+- **Wallet**: balances per wallet (Cash, GCash, Bank, plus any you add) that update as you log expenses and money in; daily budget, quick expense logging by category, a pay-period view (kinsenas or monthly) that tells you how much you can safely spend per day until payday, a 7-day chart, and a category breakdown.
 - **Me**: BMI (Asia-Pacific cut-offs), a belly-fat tracker (waist-to-height), daily targets, a weight/waist log with trend, and settings.
 
 All data stays on your phone. No account, no server, works offline.

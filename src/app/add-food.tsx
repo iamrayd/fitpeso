@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, C, Field, GUTTER, IconButton, Tap } from '@/components/ui';
 import { dateKey } from '@/lib/date';
 import { parseNum, peso } from '@/lib/format';
+import { closeTo } from '@/lib/nav';
 import { useStore } from '@/lib/store';
 
 // Common things you'll eat outside the plan, with rough Cebu prices.
@@ -38,14 +38,14 @@ export default function AddFood() {
     const cost = n(f.cost);
     addCustomFood(day, { name: f.name.trim(), kcal: Math.round(n(f.kcal)), protein: Math.round(n(f.protein)), carbs: Math.round(n(f.carbs)), fat: Math.round(n(f.fat)), cost });
     if (logCost && cost > 0) addExpense({ day, amount: cost, category: 'food', note: f.name.trim() });
-    router.back();
+    closeTo('/meals');
   };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 20 : insets.top + 12, paddingHorizontal: GUTTER, paddingBottom: insets.bottom + 32, gap: 22 }}>
         <View className="flex-row items-center justify-between">
-          <IconButton icon="close" onPress={() => router.back()} />
+          <IconButton icon="close" onPress={() => closeTo('/meals')} />
           <Text className="text-[16px] font-bold text-ink">Add food</Text>
           <View style={{ width: 44 }} />
         </View>
