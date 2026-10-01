@@ -5,10 +5,13 @@ import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActivityPicker, BodyFields, SexPicker, bodyError, emptyForm, formToProfile, type ProfileFormValue } from '@/components/profile-form';
-import { Button, C, Field, GUTTER, IconButton, Segmented, haptic } from '@/components/ui';
+import { Button, C, Field, GUTTER, IconButton, Segmented } from '@/components/ui';
 import { dateKey } from '@/lib/date';
 import { parseNum } from '@/lib/format';
 import { useStore, type PaySchedule } from '@/lib/store';
+
+// Content and the Next button are centered and capped so they don't stretch on wide screens.
+const MAX_W = 440;
 
 const STEPS = [
   { title: 'Hey there', sub: 'Let’s set you up.' },
@@ -30,7 +33,6 @@ export default function Onboarding() {
   const [error, setError] = useState('');
 
   const fail = (msg: string) => {
-    haptic.warn();
     setError(msg);
   };
 
@@ -41,7 +43,6 @@ export default function Onboarding() {
     }
     if (step < STEPS.length - 1) {
       setError('');
-      haptic.tap();
       return setStep(step + 1);
     }
     const profile = formToProfile(form);
@@ -56,7 +57,6 @@ export default function Onboarding() {
       salary: parseNum(salary) > 0 ? parseNum(salary) : 0,
       paySchedule: schedule,
     });
-    haptic.success();
     router.replace('/');
   };
 
@@ -77,7 +77,7 @@ export default function Onboarding() {
   }, [step]);
 
   return (
-    <KeyboardAvoidingView className="flex-1 bg-bg" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={{ paddingTop: insets.top + 16, paddingHorizontal: GUTTER, gap: 28 }}>
         <View className="flex-row items-center" style={{ gap: 14 }}>
           {step > 0 ? <IconButton icon="chevron-back" onPress={back} /> : <View style={{ width: 44, height: 44 }} />}
@@ -93,7 +93,7 @@ export default function Onboarding() {
       </View>
 
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: GUTTER, paddingTop: 32, paddingBottom: 24 }}>
-        <Animated.View key={step} entering={FadeInRight.duration(260)} exiting={FadeOutLeft.duration(160)} style={{ gap: 28 }}>
+        <Animated.View key={step} entering={FadeInRight.duration(260)} exiting={FadeOutLeft.duration(160)} style={{ gap: 28, width: '100%', maxWidth: MAX_W, alignSelf: 'center' }}>
           <View style={{ gap: 6 }}>
             <Text className="text-[34px] font-extrabold tracking-tight text-ink">
               {STEPS[step].title}
@@ -150,7 +150,7 @@ export default function Onboarding() {
       </ScrollView>
 
       {/* Pinned footer: the Next button is always visible, even with the keyboard open. */}
-      <View style={{ paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: insets.bottom + 16, gap: 12, backgroundColor: C.bg }}>
+      <View style={{ paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: insets.bottom + 16, gap: 12, backgroundColor: C.bg, width: '100%', maxWidth: MAX_W + GUTTER * 2, alignSelf: 'center' }}>
         {error ? <Text className="text-center text-[14px] font-semibold text-glow">{error}</Text> : null}
         <Button label={step === STEPS.length - 1 ? 'Start' : 'Next'} icon={step === STEPS.length - 1 ? 'checkmark' : 'arrow-forward'} onPress={next} />
       </View>

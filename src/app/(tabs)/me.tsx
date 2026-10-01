@@ -6,7 +6,7 @@ import Svg, { Circle, Polyline } from 'react-native-svg';
 import { useShallow } from 'zustand/react/shallow';
 
 import { ActivityPicker, BodyFields, SexPicker, formToProfile, profileToForm } from '@/components/profile-form';
-import { Button, C, Card, Field, Header, Label, Screen, SectionTitle, Segmented, Stat, Tap, haptic } from '@/components/ui';
+import { Button, C, Card, Field, Header, Label, Screen, SectionTitle, Segmented, Stat, Tap } from '@/components/ui';
 import { prettyDate } from '@/lib/date';
 import { ACTIVITY, BMI_BANDS, bmi, bmiCategory, tdee, whtr, whtrCategory } from '@/lib/fitness';
 import { clamp, parseNum } from '@/lib/format';
@@ -60,15 +60,13 @@ export default function Me() {
   const logToday = () => {
     const kg = parseNum(weight);
     const cm = waist.trim() ? parseNum(waist) : null;
-    if (!(kg >= 30 && kg <= 250) || (cm !== null && !(cm >= 40 && cm <= 200))) return haptic.warn();
+    if (!(kg >= 30 && kg <= 250) || (cm !== null && !(cm >= 40 && cm <= 200))) return;
     s.logBody({ day: today, weightKg: kg, waistCm: cm });
-    haptic.success();
   };
 
   const saveProfile = () => {
     const p = formToProfile(form);
     if (typeof p === 'string') {
-      haptic.warn();
       return setFormError(p);
     }
     s.saveProfile(p, today);
@@ -76,7 +74,6 @@ export default function Me() {
     setWaist(p.waistCm ? String(p.waistCm) : '');
     setFormError('');
     setEditing(false);
-    haptic.success();
   };
 
   const recent = [...body].reverse().slice(0, 6);
@@ -175,7 +172,7 @@ export default function Me() {
 
       <SectionTitle
         right={
-          <Tap haptics="pick" hitSlop={10} onPress={() => { setForm(profileToForm(profile)); setFormError(''); setEditing((e) => !e); }}>
+          <Tap hitSlop={10} onPress={() => { setForm(profileToForm(profile)); setFormError(''); setEditing((e) => !e); }}>
             <Text className="text-[14px] font-bold text-accent">{editing ? 'Cancel' : 'Edit'}</Text>
           </Tap>
         }>
@@ -222,7 +219,7 @@ export default function Me() {
               <Text className="text-[16px] font-bold text-ink">Auto-log meal costs</Text>
               <Text className="text-[13px] text-sub">Eaten meals go to Wallet</Text>
             </View>
-            <Switch value={s.autoLogMeals} onValueChange={(v) => { haptic.pick(); s.setSettings({ autoLogMeals: v }); }} trackColor={{ true: C.accent, false: C.raised }} thumbColor={C.ink} />
+            <Switch value={s.autoLogMeals} onValueChange={(v) => { s.setSettings({ autoLogMeals: v }); }} trackColor={{ true: C.accent, false: C.raised }} thumbColor={C.ink} />
           </View>
 
           <View style={{ gap: 10 }}>
@@ -249,7 +246,6 @@ export default function Me() {
               const sal = parseNum(salaryDraft);
               const daily = parseNum(dailyDraft);
               s.setSettings({ salary: sal > 0 ? sal : 0, defaultDailyBudget: daily > 0 ? daily : s.defaultDailyBudget });
-              haptic.success();
             }}
           />
         </View>

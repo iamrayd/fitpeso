@@ -1,9 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Haptics from 'expo-haptics';
-import { cssInterop } from 'nativewind';
-import { useEffect, type ComponentProps, type ReactNode } from 'react';
-import { Platform, Pressable, ScrollView, Text, TextInput, View, type PressableProps, type TextInputProps } from 'react-native';
-import Animated, { useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
+import { Pressable, ScrollView, Text, TextInput, View, type PressableProps, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedProps, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -21,14 +19,6 @@ export const C = {
   accent: '#E2232D',
   glow: '#FF4D57',
   warn: '#F5A524',
-};
-
-const native = Platform.OS !== 'web';
-export const haptic = {
-  tap: () => native && Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}),
-  pick: () => native && Haptics.selectionAsync().catch(() => {}),
-  success: () => native && Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}),
-  warn: () => native && Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {}),
 };
 
 export const GUTTER = 20;
@@ -90,28 +80,29 @@ export function SectionTitle({ children, right }: { children: ReactNode; right?:
   );
 }
 
-const APressable = Animated.createAnimatedComponent(Pressable);
-// Let NativeWind turn className into styles on the animated Pressable too.
-cssInterop(APressable, { className: 'style' });
-
-/** Pressable that springs down a little on touch, with optional haptics. */
-export function Tap({ children, onPress, haptics = 'tap', style, className, disabled, ...rest }: PressableProps & { haptics?: keyof typeof haptic | false; className?: string; style?: object; children: ReactNode }) {
-  const scale = useSharedValue(1);
-  const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+/**
+ * Pressable that shrinks slightly while held.
+ * Must stay a plain RN Pressable: NativeWind does not apply className to
+ * Reanimated animated components on native (it only looks right on web).
+ */
+export function Tap({ children, style, className, disabled, ...rest }: Omit<PressableProps, 'style'> & { className?: string; style?: StyleProp<ViewStyle>; children: ReactNode }) {
+  const [pressed, setPressed] = useState(false);
   return (
-    <APressable
+    <Pressable
       {...rest}
       disabled={disabled}
       className={className}
-      style={[anim, style, disabled ? { opacity: 0.35 } : null]}
-      onPressIn={() => scale.set(withSpring(0.96, { damping: 20, stiffness: 400 }))}
-      onPressOut={() => scale.set(withSpring(1, { damping: 14, stiffness: 300 }))}
-      onPress={(e) => {
-        if (haptics) haptic[haptics]();
-        onPress?.(e);
+      style={[style, { opacity: disabled ? 0.35 : pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+      onPressIn={(e) => {
+        setPressed(true);
+        rest.onPressIn?.(e);
+      }}
+      onPressOut={(e) => {
+        setPressed(false);
+        rest.onPressOut?.(e);
       }}>
       {children}
-    </APressable>
+    </Pressable>
   );
 }
 
@@ -134,7 +125,7 @@ export function Button({ label, icon, onPress, variant = 'primary', small, disab
 
 export function IconButton({ icon, onPress, color = C.ink, bg = C.raised, size = 44, disabled }: { icon: IconName; onPress: () => void; color?: string; bg?: string; size?: number; disabled?: boolean }) {
   return (
-    <Tap onPress={onPress} haptics="pick" disabled={disabled} hitSlop={6} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+    <Tap onPress={onPress} disabled={disabled} hitSlop={6} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
       <Ionicons name={icon} size={size * 0.45} color={color} />
     </Tap>
   );
@@ -144,7 +135,7 @@ export function IconButton({ icon, onPress, color = C.ink, bg = C.raised, size =
 export function OptionCard({ icon, title, hint, selected, onPress }: { icon: IconName; title: string; hint?: string; selected: boolean; onPress: () => void }) {
   return (
     <Tap
-      haptics="pick"
+     
       onPress={onPress}
       className="flex-row items-center rounded-[24px] border-2 px-5 py-5"
       style={{ gap: 16, borderColor: selected ? C.accent : C.line, backgroundColor: selected ? 'rgba(226,35,45,0.10)' : C.card }}>
@@ -170,7 +161,7 @@ export function Ring({ size = 120, stroke = 12, progress, color = C.accent, trac
   useEffect(() => {
     p.set(withTiming(Math.min(1, Math.max(0, progress)), { duration: 900 }));
   }, [progress, p]);
-  const props = useAnimatedProps(() => ({ strokeDashoffset: circ * (1 - p.get()) }));
+  const props = useAnimatedProps(() => ({ strokeDashoffset: circ * (1 - p.get()), strokeOpacity: p.get() > 0.005 ? 1 : 0 }));
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
@@ -226,7 +217,7 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
       {options.map((o) => {
         const on = o.value === value;
         return (
-          <Tap key={o.value} haptics="pick" onPress={() => onChange(o.value)} className="flex-1 items-center rounded-2xl py-3.5" style={{ backgroundColor: on ? C.accent : 'transparent' }}>
+          <Tap key={o.value} onPress={() => onChange(o.value)} className="flex-1 items-center rounded-2xl py-3.5" style={{ backgroundColor: on ? C.accent : 'transparent' }}>
             <Text className={`text-[14px] font-bold ${on ? 'text-ink' : 'text-sub'}`}>{o.label}</Text>
           </Tap>
         );
@@ -272,7 +263,7 @@ export function Check({ on, color = C.accent, size = 28 }: { on: boolean; color?
 export function Tip({ text, open, onToggle }: { text: string; open: boolean; onToggle: () => void }) {
   return (
     <View style={{ gap: 10 }}>
-      <Tap haptics="pick" onPress={onToggle} hitSlop={8} className="flex-row items-center self-start" style={{ gap: 6 }}>
+      <Tap onPress={onToggle} hitSlop={8} className="flex-row items-center self-start" style={{ gap: 6 }}>
         <Ionicons name={open ? 'close-circle' : 'information-circle-outline'} size={16} color={C.dim} />
         <Text className="text-[13px] font-semibold text-dim">{open ? 'Hide tip' : 'Tip'}</Text>
       </Tap>

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 
-import { Bar, Button, C, Card, Field, Header, IconButton, Ring, Screen, SectionTitle, Stat, Tap, haptic } from '@/components/ui';
+import { Bar, Button, C, Card, Field, Header, IconButton, Ring, Screen, SectionTitle, Stat, Tap } from '@/components/ui';
 import { addDays, fromKey, relativeDay, timeLabel } from '@/lib/date';
 import { parseNum, peso } from '@/lib/format';
 import { useToday } from '@/lib/hooks';
@@ -51,7 +51,6 @@ export default function Wallet() {
     const n = parseNum(draft);
     if (n >= 0) {
       setDailyBudget(day, n);
-      haptic.success();
     }
     setEditing(false);
   };
@@ -64,7 +63,7 @@ export default function Wallet() {
         right={
           <View className="flex-row items-center" style={{ gap: 6 }}>
             <IconButton icon="chevron-back" size={38} onPress={() => setDay(addDays(day, -1))} />
-            <Tap haptics="pick" onPress={() => setDay(today)}>
+            <Tap onPress={() => setDay(today)}>
               <Text className="min-w-[82px] text-center text-[14px] font-bold text-ink">{relativeDay(day, today)}</Text>
             </Tap>
             <IconButton icon="chevron-forward" size={38} disabled={day >= today} onPress={() => setDay(addDays(day, 1))} />
@@ -84,7 +83,7 @@ export default function Wallet() {
               {peso(Math.abs(left))}
             </Text>
             {editing ? null : (
-              <Tap haptics="pick" onPress={() => { setDraft(String(budget)); setEditing(true); }} className="flex-row items-center self-start rounded-full bg-raised px-3 py-1.5" style={{ gap: 6 }}>
+              <Tap onPress={() => { setDraft(String(budget)); setEditing(true); }} className="flex-row items-center self-start rounded-full bg-raised px-3 py-1.5" style={{ gap: 6 }}>
                 <Text className="text-[13px] font-semibold text-sub">of {peso(budget)}</Text>
                 <Ionicons name="pencil" size={12} color={C.sub} />
               </Tap>
@@ -149,7 +148,7 @@ export default function Wallet() {
             const over = w.total > budgetFor({ dailyBudgets, defaultDailyBudget }, w.day);
             const isSel = w.day === day;
             return (
-              <Tap key={w.day} haptics="pick" onPress={() => setDay(w.day)} className="flex-1 items-center" style={{ gap: 8 }}>
+              <Tap key={w.day} onPress={() => setDay(w.day)} className="flex-1 items-center" style={{ gap: 8 }}>
                 <Text className="text-[10px] font-semibold text-dim">{w.total ? (w.total >= 1000 ? `${(w.total / 1000).toFixed(1)}k` : Math.round(w.total)) : ''}</Text>
                 <View style={{ height: Math.max(4, (w.total / weekMax) * 84), width: '100%', borderRadius: 8, backgroundColor: over ? C.warn : isSel ? C.accent : 'rgba(226,35,45,0.35)' }} />
                 <Text className="text-[12px] font-bold" style={{ color: isSel ? C.ink : C.dim }}>
@@ -197,7 +196,7 @@ function ExpenseRow({ e }: { e: Expense }) {
   const meta = CATEGORIES[e.category] ?? CATEGORIES.other;
   return (
     <Animated.View entering={FadeInDown.duration(260)} exiting={FadeOut.duration(180)} layout={LinearTransition.duration(220)}>
-      <Tap haptics="pick" onPress={() => setOpen((o) => !o)} className="flex-row items-center rounded-[24px] border border-line bg-card px-4 py-4" style={{ gap: 14 }}>
+      <Tap onPress={() => setOpen((o) => !o)} className="flex-row items-center rounded-[24px] border border-line bg-card px-4 py-4" style={{ gap: 14 }}>
         <View className="h-12 w-12 items-center justify-center rounded-2xl bg-raised">
           <Ionicons name={meta.icon} size={21} color={C.accent} />
         </View>

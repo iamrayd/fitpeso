@@ -73,7 +73,7 @@ export default function Today() {
             <Bar progress={pushups / PUSHUP_GOAL} overColor={C.accent} />
             <View className="flex-row" style={{ gap: 8 }}>
               {[10, 20].map((n) => (
-                <Tap key={n} onPress={() => addPushups(today, n)} haptics={pushups < PUSHUP_GOAL && pushups + n >= PUSHUP_GOAL ? 'success' : 'tap'} className="flex-1 items-center rounded-2xl bg-raised py-3">
+                <Tap key={n} onPress={() => addPushups(today, n)} className="flex-1 items-center rounded-2xl bg-raised py-3">
                   <Text className="text-[15px] font-bold text-ink">+{n}</Text>
                 </Tap>
               ))}
@@ -81,7 +81,7 @@ export default function Today() {
           </View>
         </Card>
 
-        <Tap className="flex-1" haptics="pick" onPress={() => router.navigate('/wallet')}>
+        <Tap className="flex-1" onPress={() => router.navigate('/wallet')}>
           <Card className="flex-1">
             <View style={{ gap: 14 }}>
               <Label>Wallet</Label>
@@ -96,7 +96,7 @@ export default function Today() {
       </Animated.View>
 
       <Animated.View entering={enter(2)}>
-        <Tap haptics="pick" onPress={() => router.navigate('/workout')}>
+        <Tap onPress={() => router.navigate('/workout')}>
           <Card>
             <View className="flex-row items-center" style={{ gap: 16 }}>
               <Ring size={60} stroke={7} progress={allIds.length ? doneCount / allIds.length : 0}>
@@ -117,7 +117,7 @@ export default function Today() {
       <Animated.View entering={enter(3)}>
         <Card>
           {nextMeal && nextSlot ? (
-            <Tap haptics="success" onPress={() => toggleEaten(today, nextSlot.key)} className="flex-row items-center" style={{ gap: 16 }}>
+            <Tap onPress={() => toggleEaten(today, nextSlot.key)} className="flex-row items-center" style={{ gap: 16 }}>
               <View className="flex-1" style={{ gap: 6 }}>
                 <Label>{`Next · ${nextSlot.label}`}</Label>
                 <Text className="text-[18px] font-bold leading-[24px] text-ink">{nextMeal.name}</Text>
@@ -137,7 +137,7 @@ export default function Today() {
       </Animated.View>
 
       <Animated.View entering={enter(4)}>
-        <Tap haptics="pick" onPress={() => router.navigate('/me')}>
+        <Tap onPress={() => router.navigate('/me')}>
           <Card>
             <View className="flex-row" style={{ gap: 12 }}>
               <Stat label="BMI" value={b.toFixed(1)} color={bmiCategory(b).color} />

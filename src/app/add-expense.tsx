@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, C, Field, GUTTER, IconButton, Tap, haptic } from '@/components/ui';
+import { Button, C, Field, GUTTER, IconButton, Tap } from '@/components/ui';
 import { dateKey, fromKey, relativeDay } from '@/lib/date';
 import { parseNum, peso } from '@/lib/format';
 import { CATEGORIES, useStore, type Category } from '@/lib/store';
@@ -25,16 +25,15 @@ export default function AddExpense() {
   const valid = value > 0 && value < 10_000_000;
 
   const save = () => {
-    if (!valid) return haptic.warn();
+    if (!valid) return;
     // For a past day, stamp the expense at noon of that day so it sorts sensibly.
     const ts = day === today ? Date.now() : fromKey(day).getTime() + 12 * 3600_000;
     addExpense({ day, ts, amount: Math.round(value * 100) / 100, category, note: note.trim() });
-    haptic.success();
     router.back();
   };
 
   return (
-    <KeyboardAvoidingView className="flex-1 bg-bg" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 20 : insets.top + 12, paddingHorizontal: GUTTER, paddingBottom: insets.bottom + 32, gap: 24 }}>
         <View className="flex-row items-center justify-between">
           <IconButton icon="close" onPress={() => router.back()} />
@@ -65,7 +64,7 @@ export default function AddExpense() {
 
         <View className="flex-row justify-center" style={{ gap: 8 }}>
           {QUICK.map((q) => (
-            <Tap key={q} haptics="pick" onPress={() => setAmount(String((parseNum(amount) || 0) + q))} className="rounded-full bg-raised px-3.5 py-2.5">
+            <Tap key={q} onPress={() => setAmount(String((parseNum(amount) || 0) + q))} className="rounded-full bg-raised px-3.5 py-2.5">
               <Text className="text-[13px] font-bold text-ink">+{peso(q)}</Text>
             </Tap>
           ))}
@@ -78,7 +77,7 @@ export default function AddExpense() {
             return (
               <Tap
                 key={k}
-                haptics="pick"
+               
                 onPress={() => setCategory(k)}
                 className="flex-row items-center rounded-[18px] border px-4 py-3"
                 style={{ gap: 8, borderColor: on ? C.accent : C.line, backgroundColor: on ? 'rgba(226,35,45,0.12)' : C.card }}>

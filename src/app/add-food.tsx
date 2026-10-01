@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, C, Field, GUTTER, IconButton, Tap, haptic } from '@/components/ui';
+import { Button, C, Field, GUTTER, IconButton, Tap } from '@/components/ui';
 import { dateKey } from '@/lib/date';
 import { parseNum, peso } from '@/lib/format';
 import { useStore } from '@/lib/store';
@@ -34,16 +34,15 @@ export default function AddFood() {
   const valid = f.name.trim().length > 0 && parseNum(f.kcal) >= 0;
 
   const save = () => {
-    if (!valid) return haptic.warn();
+    if (!valid) return;
     const cost = n(f.cost);
     addCustomFood(day, { name: f.name.trim(), kcal: Math.round(n(f.kcal)), protein: Math.round(n(f.protein)), carbs: Math.round(n(f.carbs)), fat: Math.round(n(f.fat)), cost });
     if (logCost && cost > 0) addExpense({ day, amount: cost, category: 'food', note: f.name.trim() });
-    haptic.success();
     router.back();
   };
 
   return (
-    <KeyboardAvoidingView className="flex-1 bg-bg" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 20 : insets.top + 12, paddingHorizontal: GUTTER, paddingBottom: insets.bottom + 32, gap: 22 }}>
         <View className="flex-row items-center justify-between">
           <IconButton icon="close" onPress={() => router.back()} />
@@ -56,7 +55,7 @@ export default function AddFood() {
           {PRESETS.map((p) => (
             <Tap
               key={p.name}
-              haptics="pick"
+             
               onPress={() => setF({ name: p.name, kcal: String(p.kcal), protein: String(p.protein), carbs: String(p.carbs), fat: String(p.fat), cost: String(p.cost) })}
               className="rounded-[18px] border px-4 py-3"
               style={{ borderColor: f.name === p.name ? C.accent : C.line, backgroundColor: f.name === p.name ? 'rgba(226,35,45,0.12)' : C.card }}>
@@ -83,7 +82,7 @@ export default function AddFood() {
           <View className="flex-1">
             <Text className="text-[16px] font-bold text-ink">Add cost to Wallet</Text>
           </View>
-          <Switch value={logCost} onValueChange={(v) => { haptic.pick(); setLogCost(v); }} trackColor={{ true: C.accent, false: C.raised }} thumbColor={C.ink} />
+          <Switch value={logCost} onValueChange={(v) => { setLogCost(v); }} trackColor={{ true: C.accent, false: C.raised }} thumbColor={C.ink} />
         </View>
 
         <Button label="Add" icon="checkmark" onPress={save} disabled={!valid} />

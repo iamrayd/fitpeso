@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { C, haptic, type IconName } from './ui';
+import { C, type IconName } from './ui';
 
 const ICONS: Record<string, [IconName, IconName]> = {
   index: ['flash-outline', 'flash'],
@@ -72,7 +72,6 @@ export function TabBar({ state, descriptors, navigation, insets }: BottomTabBarP
               onPress={() => {
                 const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
                 if (!focused && !event.defaultPrevented) {
-                  haptic.pick();
                   navigation.navigate(route.name, route.params);
                 }
               }}

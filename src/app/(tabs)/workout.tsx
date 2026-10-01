@@ -45,7 +45,7 @@ export default function Workout() {
         {DAY_LETTERS.map((l, i) => {
           const on = i === sel;
           return (
-            <Tap key={i} haptics="pick" onPress={() => setSel(i)} className="items-center rounded-[18px] py-3" style={{ width: 44, gap: 8, backgroundColor: on ? C.accent : C.card }}>
+            <Tap key={i} onPress={() => setSel(i)} className="items-center rounded-[18px] py-3" style={{ width: 44, gap: 8, backgroundColor: on ? C.accent : C.card }}>
               <Text className="text-[14px] font-bold" style={{ color: on ? C.ink : i === todayIdx ? C.accent : C.sub }}>
                 {l}
               </Text>
@@ -100,7 +100,7 @@ export default function Workout() {
               <Tap
                 key={n}
                 disabled={isFuture || (n < 0 && pushups === 0)}
-                haptics={n > 0 && pushups < PUSHUP_GOAL && pushups + n >= PUSHUP_GOAL ? 'success' : 'tap'}
+               
                 onPress={() => addPushups(day, n)}
                 className="flex-1 items-center rounded-2xl py-4"
                 style={{ backgroundColor: n < 0 ? C.raised : 'rgba(226,35,45,0.14)' }}>
@@ -124,7 +124,7 @@ function ExerciseRow({ e, index, done, disabled, onToggle }: { e: Exercise; inde
   return (
     <Animated.View entering={FadeInDown.delay(index * 40).duration(300)} layout={LinearTransition.duration(220)}>
       <Tap
-        haptics="pick"
+       
         onPress={() => setOpen((o) => !o)}
         className="rounded-[24px] border px-4 py-4"
         style={{ borderColor: done ? 'rgba(226,35,45,0.35)' : C.line, backgroundColor: done ? 'rgba(226,35,45,0.06)' : C.card }}>
@@ -139,7 +139,7 @@ function ExerciseRow({ e, index, done, disabled, onToggle }: { e: Exercise; inde
               {e.reps}
             </Text>
           </View>
-          <Tap haptics={done ? 'tap' : 'success'} disabled={disabled} onPress={onToggle} hitSlop={12}>
+          <Tap disabled={disabled} onPress={onToggle} hitSlop={12}>
             <Check on={done} />
           </Tap>
         </View>

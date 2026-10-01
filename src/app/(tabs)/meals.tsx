@@ -87,7 +87,7 @@ export default function Meals() {
         return (
           <Animated.View key={slot.key} entering={FadeInDown.delay(i * 60).duration(350)} layout={LinearTransition.duration(240)}>
             <Tap
-              haptics="pick"
+             
               onPress={() => setOpen(isOpen ? null : slot.key)}
               className="rounded-[28px] border p-5"
               style={{ borderColor: ate ? 'rgba(226,35,45,0.35)' : C.line, backgroundColor: ate ? 'rgba(226,35,45,0.06)' : C.card }}>
@@ -103,7 +103,7 @@ export default function Meals() {
                     {mac.kcal} kcal · {mac.protein}g protein
                   </Text>
                 </View>
-                <Tap haptics={ate ? 'tap' : 'success'} onPress={() => toggleEaten(today, slot.key)} hitSlop={12}>
+                <Tap onPress={() => toggleEaten(today, slot.key)} hitSlop={12}>
                   <Check on={ate} size={32} />
                 </Tap>
               </View>
@@ -127,7 +127,7 @@ export default function Meals() {
                       .filter((a) => a.meal.id !== meal.id)
                       .slice(0, 4)
                       .map((a) => (
-                        <Tap key={a.meal.id} haptics="pick" onPress={() => setMeal(today, slot.key, a.meal.id)} className="flex-row items-center rounded-[18px] border border-line px-4 py-3.5" style={{ gap: 12 }}>
+                        <Tap key={a.meal.id} onPress={() => setMeal(today, slot.key, a.meal.id)} className="flex-row items-center rounded-[18px] border border-line px-4 py-3.5" style={{ gap: 12 }}>
                           <Text className="flex-1 text-[15px] font-semibold text-ink">{a.meal.name}</Text>
                           <Text className="text-[14px] font-bold" style={{ color: a.fits ? C.sub : C.warn }}>
                             {peso(a.cost)}

@@ -1,9 +1,10 @@
-import { View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Text, View } from 'react-native';
 
 import { ACTIVITY, type Activity } from '@/lib/fitness';
 import { parseNum } from '@/lib/format';
 import type { Profile } from '@/lib/store';
-import { Field, OptionCard, type IconName } from './ui';
+import { C, Field, OptionCard, Tap, type IconName } from './ui';
 
 export type ProfileFormValue = {
   name: string;
@@ -58,11 +59,33 @@ export function formToProfile(f: ProfileFormValue): Profile | string {
 
 type Props = { value: ProfileFormValue; onChange: (v: ProfileFormValue) => void };
 
+/** Two centered tiles side by side, capped in width so they never stretch too wide. */
 export function SexPicker({ value: f, onChange }: Props) {
+  const options: { key: Profile['sex']; label: string; icon: IconName }[] = [
+    { key: 'male', label: 'Male', icon: 'male' },
+    { key: 'female', label: 'Female', icon: 'female' },
+  ];
   return (
-    <View style={{ gap: 12 }}>
-      <OptionCard icon="male" title="Male" selected={f.sex === 'male'} onPress={() => onChange({ ...f, sex: 'male' })} />
-      <OptionCard icon="female" title="Female" selected={f.sex === 'female'} onPress={() => onChange({ ...f, sex: 'female' })} />
+    <View className="w-full flex-row self-center" style={{ maxWidth: 360, gap: 14 }}>
+      {options.map((o) => {
+        const on = f.sex === o.key;
+        return (
+          <Tap
+            key={o.key}
+            onPress={() => onChange({ ...f, sex: o.key })}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: on }}
+            className="flex-1 items-center rounded-[26px] border-2 px-4 py-7"
+            style={{ gap: 14, borderColor: on ? C.accent : C.line, backgroundColor: on ? 'rgba(226,35,45,0.10)' : C.card }}>
+            <View className="h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: on ? C.accent : C.raised }}>
+              <Ionicons name={o.icon} size={30} color={C.ink} />
+            </View>
+            <Text className="text-[17px] font-bold" style={{ color: on ? C.ink : C.sub }}>
+              {o.label}
+            </Text>
+          </Tap>
+        );
+      })}
     </View>
   );
 }
